@@ -1,26 +1,7 @@
 /*
- * simplectrl.c
- * This file is part of OsciPrime
- *
- * Copyright (C) 2011 - Manuel Di Cerbo
- *
- * OsciPrime is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * OsciPrime is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with OsciPrime; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, 
- * Boston, MA  02110-1301  USA
+ * \file adkping.c
  */
 
-	
 
 #include <stdio.h>
 #include <usb.h>
@@ -31,21 +12,17 @@
 #define IN 0x85
 #define OUT 0x07
 
-#define VID 0x18D1
-#define PID 0x4E22
 
+/* Nexus One IDs */
+#define VID 0x18D1
+#define PID 0x4E12
+
+/* Google Accessory IDs */
+#define ACCESSORY_VID 0x18D1
 #define ACCESSORY_PID 0x2D01
 #define ACCESSORY_PID_ALT 0x2D00
 
 #define LEN 2
-
-/*
-If you are on Ubuntu you will require libusb as well as the headers...
-We installed the headers with "apt-get source libusb"
-gcc simplectrl.c -I/usr/include/ -o simplectrl -lusb-1.0 -I/usr/include/ -I/usr/include/libusb-1.0
-
-Tested for Nexus S with Gingerbread 2.3.4
-*/
 
 static int mainPhase();
 static int init(void);
@@ -53,42 +30,45 @@ static int deInit(void);
 static void error(int code);
 static void status(int code);
 static int setupAccessory(
-	const char* manufacturer,
-	const char* modelName,
-	const char* description,
-	const char* version,
-	const char* uri,
-	const char* serialNumber);
+	char* manufacturer,
+	char* modelName,
+	char* description,
+	char* version,
+	char* uri,
+	char* serialNumber);
 
 //static
 static struct libusb_device_handle* handle;
-static char stop;
-static char success = 0;
 
 int main (int argc, char *argv[]){
 	if(init() < 0)
-		return;
+		return -1;
+	
 	//doTransfer();
 	if(setupAccessory(
-		"Manufacturer",
-		"Model",
-		"Description",
-		"VersionName",
-		"http://neuxs-computing.ch",
-		"2254711SerialNo.") < 0){
+			"STMicroelectronics",
+			"adkping",
+			"Just pings data",
+			"1.0",
+			"http://www.st.com",
+			"1234567890123456") < 0){
 		fprintf(stdout, "Error setting up accessory\n");
 		deInit();
 		return -1;
-	};
+	}
+	
 	if(mainPhase() < 0){
 		fprintf(stdout, "Error during main phase\n");
 		deInit();
 		return -1;
-	}	
+	}
+	
 	deInit();
 	fprintf(stdout, "Done, no errors\n");
+
 	return 0;
 }
+
 
 static int mainPhase(){
 	unsigned char buffer[500000];
@@ -101,7 +81,7 @@ static int mainPhase(){
 	response = libusb_bulk_transfer(handle,IN,buffer,500000, &transferred,0);
 	if(response < 0){error(response);return -1;}
 
-
+	return 0;
 }
 
 
@@ -115,6 +95,7 @@ static int init(){
 	return 0;
 }
 
+
 static int deInit(){
 	//TODO free all transfers individually...
 	//if(ctrlTransfer != NULL)
@@ -125,14 +106,15 @@ static int deInit(){
 	return 0;
 }
 
-static int setupAccessory(
-	const char* manufacturer,
-	const char* modelName,
-	const char* description,
-	const char* version,
-	const char* uri,
-	const char* serialNumber){
 
+static int setupAccessory(
+	char* manufacturer,
+	char* modelName,
+	char* description,
+	char* version,
+	char* uri,
+	char* serialNumber){
+	
 	unsigned char ioBuffer[2];
 	int devVersion;
 	int response;
@@ -146,35 +128,46 @@ static int setupAccessory(
 		0, //wIndex
 		ioBuffer, //data
 		2, //wLength
-        0 //timeout
+		0 //timeout
 	);
 
-	if(response < 0){error(response);return-1;}
+	if(response < 0){
+		error(response);
+		return-1;
+	}
 
 	devVersion = ioBuffer[1] << 8 | ioBuffer[0];
 	fprintf(stdout,"Verion Code Device: %d\n", devVersion);
 	
 	usleep(1000);//sometimes hangs on the next transfer :(
 
-	response = libusb_control_transfer(handle,0x40,52,0,0,(char*)manufacturer,strlen(manufacturer),0);
-	if(response < 0){error(response);return -1;}
-	response = libusb_control_transfer(handle,0x40,52,0,1,(char*)modelName,strlen(modelName)+1,0);
-	if(response < 0){error(response);return -1;}
-	response = libusb_control_transfer(handle,0x40,52,0,2,(char*)description,strlen(description)+1,0);
-	if(response < 0){error(response);return -1;}
-	response = libusb_control_transfer(handle,0x40,52,0,3,(char*)version,strlen(version)+1,0);
-	if(response < 0){error(response);return -1;}
-	response = libusb_control_transfer(handle,0x40,52,0,4,(char*)uri,strlen(uri)+1,0);
-	if(response < 0){error(response);return -1;}
-	response = libusb_control_transfer(handle,0x40,52,0,5,(char*)serialNumber,strlen(serialNumber)+1,0);
+	response = libusb_control_transfer(handle,0x40,52,0,0,(unsigned char*)manufacturer,strlen(manufacturer),0);
 	if(response < 0){error(response);return -1;}
 
-	fprintf(stdout,"Accessory Identification sent\n", devVersion);
+	response = libusb_control_transfer(handle,0x40,52,0,1,(unsigned char*)modelName,strlen(modelName)+1,0);
+	if(response < 0){error(response);return -1;}
+
+	response = libusb_control_transfer(handle,0x40,52,0,2,(unsigned char*)description,strlen(description)+1,0);
+	if(response < 0){error(response);return -1;}
+
+	response = libusb_control_transfer(handle,0x40,52,0,3,(unsigned char*)version,strlen(version)+1,0);
+	if(response < 0){error(response);return -1;}
+
+	response = libusb_control_transfer(handle,0x40,52,0,4,(unsigned char*)uri,strlen(uri)+1,0);
+	if(response < 0){error(response);return -1;}
+
+	response = libusb_control_transfer(handle,0x40,52,0,5,(unsigned char*)serialNumber,strlen(serialNumber)+1,0);
+	if(response < 0){error(response);return -1;}
+
+	fprintf(stdout,"Accessory Identification sent %i\n", devVersion);
 
 	response = libusb_control_transfer(handle,0x40,53,0,0,NULL,0,0);
-	if(response < 0){error(response);return -1;}
+	if(response < 0){
+		error(response);
+		return -1;
+	}
 
-	fprintf(stdout,"Attempted to put device into accessory mode\n", devVersion);
+	fprintf(stdout,"Attempted to put device into accessory mode %i\n", devVersion);
 
 	if(handle != NULL)
 		libusb_release_interface (handle, 0);
@@ -182,7 +175,7 @@ static int setupAccessory(
 
 	for(;;){//attempt to connect to new PID, if that doesn't work try ACCESSORY_PID_ALT
 		tries--;
-		if((handle = libusb_open_device_with_vid_pid(NULL, VID, ACCESSORY_PID)) == NULL){
+		if((handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID)) == NULL){
 			if(tries < 0){
 				return -1;
 			}
@@ -191,8 +184,10 @@ static int setupAccessory(
 		}
 		sleep(1);
 	}
+	
 	libusb_claim_interface(handle, 0);
 	fprintf(stdout, "Interface claimed, ready to transfer data\n");
+
 	return 0;
 }
 
@@ -242,6 +237,7 @@ static void error(int code){
 		fprintf(stdout, "Error: unkown error\n");
 	}
 }
+
 
 static void status(int code){
 	fprintf(stdout,"\n");
