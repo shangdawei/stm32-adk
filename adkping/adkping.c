@@ -37,7 +37,6 @@ static int setupAccessory(
 	char* uri,
 	char* serialNumber);
 
-//static
 static struct libusb_device_handle* handle;
 
 int main (int argc, char *argv[]){
@@ -75,9 +74,24 @@ static int mainPhase(){
 	int response = 0;
 	static int transferred;
 
+	struct libusb_config_descriptor* config_desc;
+	const struct libusb_interface_descriptor* interface_desc;
+	
+	response = libusb_get_descriptor(handle, LIBUSB_DT_CONFIG, 0, buffer, LIBUSB_DT_CONFIG_SIZE);
+	//response = libusb_get_descriptor(handle, LIBUSB_DT_INTERFACE, 0, buffer, LIBUSB_DT_INTERFACE_SIZE);
+	if(response < 0){error(response);return -1;}
+
+	config_desc = (struct libusb_config_descriptor*)buffer;
+	printf("bLength %i\n", config_desc->bLength);
+	printf("bNumInterfaces %i\n", config_desc->bNumInterfaces);
+	printf("MaxPower %i\n", config_desc->MaxPower);
+
+	
+	/* Receive something */
 	response = libusb_bulk_transfer(handle,IN,buffer,16384, &transferred,0);
 	if(response < 0){error(response);return -1;}
 
+	/* Send something */
 	response = libusb_bulk_transfer(handle,IN,buffer,500000, &transferred,0);
 	if(response < 0){error(response);return -1;}
 
@@ -107,6 +121,13 @@ static int deInit(){
 }
 
 
+/**
+ * Attempts to put USB device in Accessory mode.
+ * On success, PID/VID switches to accessory PID/VID
+ * and proper application is launched. Application must match
+ * Accessory manufacturer, model and version which are defined in
+ * "android.hardware.us.action.USB_ACCESSORY_ATTACHED" meta-data
+ */
 static int setupAccessory(
 	char* manufacturer,
 	char* modelName,
@@ -120,6 +141,9 @@ static int setupAccessory(
 	int response;
 	int tries = 5;
 
+	/* Send GET_PROTOCOL (0x51) request to figure out whether the device supports ADK
+	 * If protocol is !0 the device supports it
+	 */
 	response = libusb_control_transfer(
 		handle, //handle
 		0xC0, //bmRequestType
@@ -133,14 +157,21 @@ static int setupAccessory(
 
 	if(response < 0){
 		error(response);
-		return-1;
+		return -1;
 	}
 
+	/* Extract protocol version to check whether Accessory mode is supported */
 	devVersion = ioBuffer[1] << 8 | ioBuffer[0];
-	fprintf(stdout,"Verion Code Device: %d\n", devVersion);
+	fprintf(stdout,"Version Code Device: %d\n", devVersion);
+
+	if(devVersion == 0){
+		fprintf(stdout,"Sorry, device is not supporting Accessory mode\n");
+		return -1;
+	}
 	
 	usleep(1000);//sometimes hangs on the next transfer :(
 
+	/* Accessory mode is supported: send out IDs */
 	response = libusb_control_transfer(handle,0x40,52,0,0,(unsigned char*)manufacturer,strlen(manufacturer),0);
 	if(response < 0){error(response);return -1;}
 
@@ -159,20 +190,24 @@ static int setupAccessory(
 	response = libusb_control_transfer(handle,0x40,52,0,5,(unsigned char*)serialNumber,strlen(serialNumber)+1,0);
 	if(response < 0){error(response);return -1;}
 
-	fprintf(stdout,"Accessory Identification sent %i\n", devVersion);
+	fprintf(stdout,"Accessory Identification sent\n");
 
+	/* Request device to start up in accessory mode */
 	response = libusb_control_transfer(handle,0x40,53,0,0,NULL,0,0);
 	if(response < 0){
 		error(response);
 		return -1;
 	}
 
-	fprintf(stdout,"Attempted to put device into accessory mode %i\n", devVersion);
+	fprintf(stdout,"Attempted to put device into accessory mode\n");
 
-	if(handle != NULL)
-		libusb_release_interface (handle, 0);
+	/* Close phone handles as we need to connect to Accessory device now */
+	if(handle != NULL){
+		libusb_release_interface(handle, 0);
+		libusb_close(handle);
+	}
 
-
+	/* Try connecting to Accessory device with proper PID/VID */
 	for(;;){//attempt to connect to new PID, if that doesn't work try ACCESSORY_PID_ALT
 		tries--;
 		if((handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID)) == NULL){
@@ -184,8 +219,22 @@ static int setupAccessory(
 		}
 		sleep(1);
 	}
+
+#if 0
+	/* Set configuration to 1 as per ADK protocol */
+	response = libusb_set_configuration(handle, 1);
+	if(response < 0){
+		error(response);
+		return -1;
+	}
+#endif
 	
-	libusb_claim_interface(handle, 0);
+	response = libusb_claim_interface(handle, 0);
+	if(response < 0){
+		error(response);
+		return -1;
+	}
+
 	fprintf(stdout, "Interface claimed, ready to transfer data\n");
 
 	return 0;
