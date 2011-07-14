@@ -9,8 +9,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#define IN 0x85
-#define OUT 0x07
+//#define IN 0x85
+//#define OUT 0x07
+
+/* Nexus One end points */
+#define IN 0x83
+#define OUT 0x03
 
 
 /* Nexus One IDs */
@@ -88,12 +92,14 @@ static int mainPhase(){
 
 	
 	/* Receive something */
-	response = libusb_bulk_transfer(handle,IN,buffer,16384, &transferred,0);
+	response = libusb_bulk_transfer(handle,OUT,buffer,32, &transferred,0);
 	if(response < 0){error(response);return -1;}
+	printf("Done, transferred %i bytes\n", transferred);
 
 	/* Send something */
-	response = libusb_bulk_transfer(handle,IN,buffer,500000, &transferred,0);
+	response = libusb_bulk_transfer(handle,OUT,buffer,500000, &transferred,0);
 	if(response < 0){error(response);return -1;}
+	printf("Done, transferred %i bytes\n", transferred);
 
 	return 0;
 }
@@ -220,7 +226,7 @@ static int setupAccessory(
 		sleep(1);
 	}
 
-#if 0
+#if 1
 	/* Set configuration to 1 as per ADK protocol */
 	response = libusb_set_configuration(handle, 1);
 	if(response < 0){
