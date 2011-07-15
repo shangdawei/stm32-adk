@@ -1,5 +1,8 @@
 /*
  * \file adkping.c
+ * \author David Siorpaes
+ *
+ * Inspired from http://android.serverbox.ch/?p=262#comments
  */
 
 
@@ -45,10 +48,15 @@ static struct libusb_device_handle* handle;
 int main(int argc, char *argv[])
 {
 	int err;
+	
 	libusb_init(NULL);
+	libusb_set_debug(NULL, 3);
 
 	/* Try to open directly accessory. If it's not there, try to switch phone to it */
 	handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID_ALT);
+	//if(handle)
+		//libusb_reset_device(handle);
+
 	if(handle == NULL){
 		printf("Device not in Accessory mode. Trying to switch it to it...\n");
 		err = setupAccessory("STMicroelectronics", "adkping", "Just pings data", "1.0",
@@ -79,7 +87,6 @@ static int mainPhase(){
 	int i;
 	static int transferred;
 
-#if 0
 	struct libusb_config_descriptor* config_desc;
 	const struct libusb_interface_descriptor* interface_desc;
 	
@@ -91,24 +98,39 @@ static int mainPhase(){
 	printf("bLength %i\n", config_desc->bLength);
 	printf("bNumInterfaces %i\n", config_desc->bNumInterfaces);
 	printf("MaxPower %i\n", config_desc->MaxPower);
-#endif
 	
 	/* Send something */
 	memset(buffer, 0xdd, sizeof(buffer));
-	for(i=0; i<128; i++){
-		buffer[i] = 'a' + i;
+	for(i=0; i<16; i++){
+		buffer[i] = i;
 	}
-	response = libusb_bulk_transfer(handle, OUT, buffer, 64, &transferred, 0);
+
+	response = libusb_bulk_transfer(handle, OUT, buffer, 32, &transferred, 5000);
 	if(response < 0){
 		error(response);
 		return -1;
 	}
 	else{
+		printf("Done, transferred %i bytes\n", transferred);
 		status(response);
 	}
-	
-	printf("Done, transferred %i bytes\n", transferred);
 
+	/* Receive back something */
+	memset(buffer, 0x0, sizeof(buffer));
+	response = libusb_bulk_transfer(handle, IN, buffer, 32, &transferred, 5000);
+	if(response < 0){
+		error(response);
+		return -1;
+	}
+	else{
+		printf("Done, received %i bytes\n", transferred);
+		status(response);
+	}
+
+	for(i=0; i<128; i++)
+		printf("%i ", buffer[i]);
+	printf("\n");
+	
 	return 0;
 }
 
@@ -117,8 +139,10 @@ static int deInit(){
 	//TODO free all transfers individually...
 	//if(ctrlTransfer != NULL)
 	//	libusb_free_transfer(ctrlTransfer);
-	if(handle != NULL)
+	if(handle != NULL){
 		libusb_release_interface (handle, 0);
+		libusb_close(handle);
+	}
 	libusb_exit(NULL);
 	return 0;
 }
@@ -186,7 +210,8 @@ static int setupAccessory(
 		return -1;
 	}
 	libusb_claim_interface(handle, 0);
-
+	//libusb_reset_device(handle);
+	
 	
 	/* Send GET_PROTOCOL (0x51) request to figure out whether the device supports ADK
 	 * If protocol is  not 0 the device supports it
