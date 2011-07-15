@@ -9,27 +9,26 @@
 #include <string.h>
 #include <unistd.h>
 
-//#define IN 0x85
-//#define OUT 0x07
 
-/* Nexus One end points */
-#define IN 0x83
-#define OUT 0x03
-
-
-/* Nexus One IDs */
+/* Nexus-One IDs */
 #define VID 0x18D1
 #define PID 0x4E12
 
 /* Google Accessory IDs */
 #define ACCESSORY_VID 0x18D1
-#define ACCESSORY_PID 0x2D01
-#define ACCESSORY_PID_ALT 0x2D00
+#define ACCESSORY_PID 0x2D00
+#define ACCESSORY_PID_ALT 0x2D01
+
+
+/* Nexus-One Accessory device end points */
+#define IN  0x83
+#define OUT 0x03
 
 #define LEN 2
 
+unsigned char buffer[1024];
+
 static int mainPhase();
-static int init(void);
 static int deInit(void);
 static void error(int code);
 static void status(int code);
@@ -43,23 +42,25 @@ static int setupAccessory(
 
 static struct libusb_device_handle* handle;
 
-int main (int argc, char *argv[]){
-	if(init() < 0)
-		return -1;
-	
-	//doTransfer();
-	if(setupAccessory(
-			"STMicroelectronics",
-			"adkping",
-			"Just pings data",
-			"1.0",
-			"http://www.st.com",
-			"1234567890123456") < 0){
-		fprintf(stdout, "Error setting up accessory\n");
-		deInit();
-		return -1;
+int main(int argc, char *argv[])
+{
+	int err;
+	libusb_init(NULL);
+
+	/* Try to open directly accessory. If it's not there, try to switch phone to it */
+	handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID_ALT);
+	if(handle == NULL){
+		printf("Device not in Accessory mode. Trying to switch it to it...\n");
+		err = setupAccessory("STMicroelectronics", "adkping", "Just pings data", "1.0",
+			"http://www.st.com", "1234567890123456");
+		if(err < 0){
+			fprintf(stdout, "Sorry, can't set up accessory, giving up\n");
+			deInit();
+			return -1;
+		}
 	}
-	
+
+	/* Do some stuff */
 	if(mainPhase() < 0){
 		fprintf(stdout, "Error during main phase\n");
 		deInit();
@@ -74,10 +75,11 @@ int main (int argc, char *argv[]){
 
 
 static int mainPhase(){
-	unsigned char buffer[500000];
 	int response = 0;
+	int i;
 	static int transferred;
 
+#if 0
 	struct libusb_config_descriptor* config_desc;
 	const struct libusb_interface_descriptor* interface_desc;
 	
@@ -89,29 +91,24 @@ static int mainPhase(){
 	printf("bLength %i\n", config_desc->bLength);
 	printf("bNumInterfaces %i\n", config_desc->bNumInterfaces);
 	printf("MaxPower %i\n", config_desc->MaxPower);
-
+#endif
 	
-	/* Receive something */
-	response = libusb_bulk_transfer(handle,OUT,buffer,32, &transferred,0);
-	if(response < 0){error(response);return -1;}
-	printf("Done, transferred %i bytes\n", transferred);
-
 	/* Send something */
-	response = libusb_bulk_transfer(handle,OUT,buffer,500000, &transferred,0);
-	if(response < 0){error(response);return -1;}
-	printf("Done, transferred %i bytes\n", transferred);
-
-	return 0;
-}
-
-
-static int init(){
-	libusb_init(NULL);
-	if((handle = libusb_open_device_with_vid_pid(NULL, VID, PID)) == NULL){
-		fprintf(stdout, "Problem acquireing handle\n");
+	memset(buffer, 0xdd, sizeof(buffer));
+	for(i=0; i<128; i++){
+		buffer[i] = 'a' + i;
+	}
+	response = libusb_bulk_transfer(handle, OUT, buffer, 64, &transferred, 0);
+	if(response < 0){
+		error(response);
 		return -1;
 	}
-	libusb_claim_interface(handle, 0);
+	else{
+		status(response);
+	}
+	
+	printf("Done, transferred %i bytes\n", transferred);
+
 	return 0;
 }
 
@@ -123,6 +120,43 @@ static int deInit(){
 	if(handle != NULL)
 		libusb_release_interface (handle, 0);
 	libusb_exit(NULL);
+	return 0;
+}
+
+
+int connectAccessory(void)
+{
+	int response;
+	int tries = 5;
+	
+	/* Try connecting to Accessory device with proper PID/VID */
+	for(;;){
+		tries--;
+		if((handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID_ALT)) == NULL){
+			if(tries < 0){
+				return -1;
+			}
+		}else{
+			break;
+		}
+		sleep(1);
+	}
+
+	/* Set configuration to 1 as per ADK protocol */
+	response = libusb_set_configuration(handle, 1);
+	if(response < 0){
+		error(response);
+		return -1;
+	}
+	
+	response = libusb_claim_interface(handle, 0);
+	if(response < 0){
+		error(response);
+		return -1;
+	}
+
+	fprintf(stdout, "Interface claimed, ready to transfer data\n");
+
 	return 0;
 }
 
@@ -145,10 +179,17 @@ static int setupAccessory(
 	unsigned char ioBuffer[2];
 	int devVersion;
 	int response;
-	int tries = 5;
 
+	/* Open Nexus One device */
+	if((handle = libusb_open_device_with_vid_pid(NULL, VID, PID)) == NULL){
+		fprintf(stdout, "Problem acquireing handle\n");
+		return -1;
+	}
+	libusb_claim_interface(handle, 0);
+
+	
 	/* Send GET_PROTOCOL (0x51) request to figure out whether the device supports ADK
-	 * If protocol is !0 the device supports it
+	 * If protocol is  not 0 the device supports it
 	 */
 	response = libusb_control_transfer(
 		handle, //handle
@@ -207,42 +248,18 @@ static int setupAccessory(
 
 	fprintf(stdout,"Attempted to put device into accessory mode\n");
 
-	/* Close phone handles as we need to connect to Accessory device now */
+	/* Close phone handles as we need to connect to Accessory device in a while */
 	if(handle != NULL){
 		libusb_release_interface(handle, 0);
 		libusb_close(handle);
 	}
 
-	/* Try connecting to Accessory device with proper PID/VID */
-	for(;;){//attempt to connect to new PID, if that doesn't work try ACCESSORY_PID_ALT
-		tries--;
-		if((handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID)) == NULL){
-			if(tries < 0){
-				return -1;
-			}
-		}else{
-			break;
-		}
-		sleep(1);
-	}
-
-#if 1
-	/* Set configuration to 1 as per ADK protocol */
-	response = libusb_set_configuration(handle, 1);
+	response = connectAccessory();
 	if(response < 0){
-		error(response);
+		fprintf(stderr, "Could not connect to Accessory device\n");
 		return -1;
 	}
-#endif
 	
-	response = libusb_claim_interface(handle, 0);
-	if(response < 0){
-		error(response);
-		return -1;
-	}
-
-	fprintf(stdout, "Interface claimed, ready to transfer data\n");
-
 	return 0;
 }
 
