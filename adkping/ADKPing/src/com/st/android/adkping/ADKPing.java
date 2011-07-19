@@ -9,6 +9,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
+import android.text.method.ScrollingMovementMethod;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
 import com.android.future.usb.UsbAccessory;
 import com.android.future.usb.UsbManager;
 import org.slf4j.Logger;
@@ -21,177 +26,148 @@ import java.io.IOException;
 
 public class ADKPing extends Activity implements Runnable
 {
-  private final Logger logger = LoggerFactory.getLogger("ADKPing");
+	private final Logger logger = LoggerFactory.getLogger("ADKPing");
 
-  private UsbManager usbManager;
+	private UsbManager usbManager;
 
-  UsbAccessory accessory;
-  ParcelFileDescriptor accessoryFileDescriptor;
-  FileInputStream accessoryInput;
-  FileOutputStream accessoryOutput;
+	UsbAccessory accessory;
+	ParcelFileDescriptor accessoryFileDescriptor;
+	FileInputStream accessoryInput;
+	FileOutputStream accessoryOutput;
 
-  private final BroadcastReceiver usbBroadcastReceiver = new BroadcastReceiver()
-  {
-    public void onReceive(Context context, Intent intent)
-    {
-      String action = intent.getAction();
-      if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED.equals(action))
-      {
-        synchronized (this)
-        {
-          accessory = UsbManager.getAccessory(intent);
-        }
-      }
-      else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action))
-      {
-        UsbAccessory accessory = UsbManager.getAccessory(intent);
-        if (accessory != null)
-        {
-          // call your method that cleans up and closes communication with the accessory
-        }
-      }
-    }
-  };
+	LinearLayout layout;
+	TextView logTextView;
+	
+	Handler mHandler;
+  
+	private final BroadcastReceiver usbBroadcastReceiver = new BroadcastReceiver()
+	{
+		public void onReceive(Context context, Intent intent)
+		{
+			String action = intent.getAction();
+			if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED.equals(action)){
+				synchronized (this){
+				 accessory = UsbManager.getAccessory(intent);
+				}
+			}
+			else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)){
+				UsbAccessory accessory = UsbManager.getAccessory(intent);
+				if (accessory != null)
+				{
+				 // call your method that cleans up and closes communication with the accessory
+				}
+			}
+		}
+	};
 
-  Handler messageHandler = new Handler()
-  {
-    @Override
-    public void handleMessage(Message msg)
-    {
-      switch (msg.what)
-      {
-        case 1:
-          logger.info("Got message type {}", msg.what);
-//              SendFileMessage m = (SendFileMessage) msg.obj;
-//              handleSendFile(m);
-        break;
-        case 2:
-          logger.info("Got message type {}", msg.what);
-//              SendFileMessage m = (SendFileMessage) msg.obj;
-//              handleSendFile(m);
-        break;
-        case 3:
-          logger.info("Got message type {}", msg.what);
-//              SendFileMessage m = (SendFileMessage) msg.obj;
-//              handleSendFile(m);
-        break;
-      }
-    }
-  };
 
-  /**
-   * Main USB reading loop, processing incoming data from accessory and parsing
-   * it into messages via the defined format.
-   */
-  public void run()
-  {
-    int ret = 0;
-    byte[] buffer = new byte[16384];
-    int i;
+	void sendText(String text)
+	{
+		Message msg = new Message();
+		msg.obj = text;
+		mHandler.sendMessage(msg);
+	}
+	
+	/**
+	 * Main USB reading loop, processing incoming data from accessory
+	 */
+	public void run()
+	{
+		int ret = 0;
+		byte[] buffer = new byte[16384];
 
-    while (ret >= 0)
-    {
-      try
-      {
-        ret = accessoryInput.read(buffer);
-        buffer[0] = 'c';
-        buffer[1] = 'i';
-        buffer[2] = 'a';
-        buffer[3] = 'o';
+		while(true){
+			try{
+				sendText("Receiving data\n");
+			
+				ret = accessoryInput.read(buffer);
+
+				sendText("Received" + ret + "bytes\n");
+
+				buffer[0] = 'c';
+				buffer[1] = 'i';
+				buffer[2] = 'a';
+				buffer[3] = 'o';
         
-        accessoryOutput.write(buffer, 0, ret);
-        logger.debug("Read {} bytes.", ret);
-      }
-      catch (IOException e)
-      {
-        logger.debug("Exception in USB accessory input reading", e);
-        break;
-      }
+				sendText("Sending back data\n");
+				
+				accessoryOutput.write(buffer, 0, ret);
+				
+				sendText("Sent\n");
+			}
+			catch (IOException e){
+				sendText("Exception in reading/writing accessory\n");
+				logger.debug("Exception in USB accessory input reading", e);
+			}
+		}
+	}
 
-      i = 0;
-      while (i < ret)
-      {
-        int len = ret - i;
+	@Override
+	public void onCreate(Bundle savedInstanceState)
+	{
+		super.onCreate(savedInstanceState);
 
-        switch (buffer[i])
-        {
-          case 0x1:
-            if (len >= 3)
-            {
-              Message m = Message.obtain(messageHandler, 1);
-//                      m.obj = new MessageTypeOne(buffer[i + 1], buffer[i + 2]);
-              messageHandler.sendMessage(m);
-            }
-            i += 3;
-            break;
+		usbManager = UsbManager.getInstance(this);
 
-          case 0x4:
-            if (len >= 3)
-            {
-              Message m = Message.obtain(messageHandler, 1);
-//                      m.obj = new MessageTypeTwo(buffer[i + 1], buffer[i + 2]);
-              messageHandler.sendMessage(m);
-            }
-            i += 3;
-            break;
+		/* Handle the Accessory stuff */
+		IntentFilter filter = new IntentFilter(UsbManager.ACTION_USB_ACCESSORY_ATTACHED);
+		filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
+		registerReceiver(usbBroadcastReceiver, filter);
 
-          default:
-            logger.debug("unknown msg: " + buffer[i]);
-            i = len;
-            break;
-        }
-      }
+		if (getLastNonConfigurationInstance() != null){
+			accessory = (UsbAccessory) getLastNonConfigurationInstance();
+			openAccessory(accessory);
+		}
+    
+		/* Set up the UI */	
+		setContentView(R.layout.main);
+		logTextView = (TextView)findViewById(R.id.logTextView);
+		logTextView.setMovementMethod(new ScrollingMovementMethod());
+		
+		/* Set up message handler used to update the UI from different thread 
+		 * which would crash UI with "CalledFromWrongThreadException" otherwise
+		 */
+		mHandler = new Handler()
+		{
+			@Override
+			public void handleMessage(Message msg)
+				{
+				String text = (String)msg.obj;
+				logTextView.append(text);
+				//msg.recycle();
+				}
+		};
+	}
 
-    }
-  }
+	
+	@Override
+	public Object onRetainNonConfigurationInstance()
+	{
+		return accessory != null ? accessory : super.onRetainNonConfigurationInstance();
+	}
 
-  @Override
-  public void onCreate(Bundle savedInstanceState)
-  {
-    super.onCreate(savedInstanceState);
+	@Override
+	public void onResume()
+	{
+		super.onResume();
 
-    usbManager = UsbManager.getInstance(this);
+		Intent intent = getIntent();
+		if (accessoryInput != null && accessoryOutput != null)
+			return;
 
-    IntentFilter filter = new IntentFilter(UsbManager.ACTION_USB_ACCESSORY_ATTACHED);
-    filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
-    registerReceiver(usbBroadcastReceiver, filter);
-
-    if (getLastNonConfigurationInstance() != null)
-    {
-      accessory = (UsbAccessory) getLastNonConfigurationInstance();
-      openAccessory(accessory);
-    }
-    setContentView(R.layout.main);
-  }
-
-  @Override
-  public Object onRetainNonConfigurationInstance()
-  {
-    return accessory != null ? accessory : super.onRetainNonConfigurationInstance();
-  }
-
- @Override
- public void onResume()
- {
-   super.onResume();
-
-   Intent intent = getIntent();
-   if (accessoryInput != null && accessoryOutput != null)
-     return;
-
-   // TODO: verify, docs don't do this simple thing, not sure why?
-   UsbAccessory accessory = UsbManager.getAccessory(intent);
-   if (accessory != null)
-     openAccessory(accessory);
-   else
-     logger.error("Failed to resume accessory.");
- }
+		// TODO: verify, docs don't do this simple thing, not sure why?
+		UsbAccessory accessory = UsbManager.getAccessory(intent);
+		if (accessory != null)
+			openAccessory(accessory);
+		else
+			logger.error("Failed to resume accessory.");
+	}
 
   @Override
   public void onPause()
   {
     super.onPause();
-    closeAccessory();
+    closeAccessory();//daz dont we need to set accessory null ?
   }
 
   @Override
@@ -210,29 +186,28 @@ public class ADKPing extends Activity implements Runnable
       FileDescriptor fd = accessoryFileDescriptor.getFileDescriptor();
       accessoryInput = new FileInputStream(fd);
       accessoryOutput = new FileOutputStream(fd);
-      Thread thread = new Thread(null, this, "AndroidPCHost");
+      Thread thread = new Thread(null, this, "ADKPingThread");
       thread.start();
+      logTextView.append("Accessory Opened\n");
       logger.debug("accessory opened");
       // TODO: enable USB operations in the app
     }
-    else
-    {
-      logger.debug("accessory open fail");
+    else{
+    	logTextView.append("Accessory failed\n");
+    	logger.debug("accessory open fail");
     }
   }
 
   private void closeAccessory()
   {
     // TODO: disable USB operations in the app
-    try
-    {
-      if (accessoryFileDescriptor != null)
+    try{
+      if(accessoryFileDescriptor != null)
         accessoryFileDescriptor.close();
     }
     catch (IOException e)
     {}
-    finally
-    {
+    finally{
       accessoryFileDescriptor = null;
       accessory = null;
     }
