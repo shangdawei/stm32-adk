@@ -10,8 +10,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.text.method.ScrollingMovementMethod;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.android.future.usb.UsbAccessory;
@@ -36,6 +38,7 @@ public class ADKPing extends Activity implements Runnable
 	FileOutputStream accessoryOutput;
 
 	LinearLayout layout;
+	ScrollView scrollView;
 	TextView logTextView;
 	
 	Handler mHandler;
@@ -102,6 +105,20 @@ public class ADKPing extends Activity implements Runnable
 		}
 	}
 
+	
+	private void scrollToEnd()
+	{
+		/* A simple scrollView.fullScroll(View.FOCUS_DOWN) wont work, as
+		 * the layout has not happened yet :/
+		 * Cfr.: http://stackoverflow.com/questions/3087877/scroll-to-last-line-of-tablelayout-within-a-scrollview
+		 * */
+		scrollView.post(new Runnable() {
+	        public void run() {
+	        	scrollView.fullScroll(View.FOCUS_DOWN);
+	        }
+	    });
+	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -122,7 +139,8 @@ public class ADKPing extends Activity implements Runnable
 		/* Set up the UI */	
 		setContentView(R.layout.main);
 		logTextView = (TextView)findViewById(R.id.logTextView);
-		logTextView.setMovementMethod(new ScrollingMovementMethod());
+		scrollView = (ScrollView)findViewById(R.id.ScrollView01);
+
 		
 		/* Set up message handler used to update the UI from different thread 
 		 * which would crash UI with "CalledFromWrongThreadException" otherwise
@@ -135,6 +153,7 @@ public class ADKPing extends Activity implements Runnable
 				String text = (String)msg.obj;
 				logTextView.append(text);
 				//msg.recycle();
+				scrollToEnd();
 				}
 		};
 	}
