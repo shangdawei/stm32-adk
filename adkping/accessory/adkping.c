@@ -15,7 +15,11 @@
 
 /* Nexus-One IDs */
 #define VID 0x18D1
+/* PID used with USB debugging disabled */
+//#define PID 0x4E11
+/* PID used with USB debugging enabled */
 #define PID 0x4E12
+
 
 /* Google Accessory IDs */
 #define ACCESSORY_VID 0x18D1
@@ -26,8 +30,6 @@
 /* Nexus-One Accessory device end points */
 #define IN  0x83
 #define OUT 0x03
-
-#define LEN 2
 
 unsigned char buffer[1024];
 
@@ -48,7 +50,7 @@ static struct libusb_device_handle* handle;
 int main(int argc, char *argv[])
 {
 	int err;
-	
+
 	libusb_init(NULL);
 	libusb_set_debug(NULL, 3);
 
@@ -59,7 +61,7 @@ int main(int argc, char *argv[])
 
 	if(handle == NULL){
 		printf("Device not in Accessory mode. Trying to switch it to it...\n");
-		err = setupAccessory("STMicroelectronics", "adkping", "Just pings data", "1.0",
+		err = setupAccessory("STMicroelectronics", "adkping", "Just pings data", "2.0",
 			"http://www.st.com", "1234567890123456");
 		if(err < 0){
 			fprintf(stdout, "Sorry, can't set up accessory, giving up\n");
@@ -84,9 +86,9 @@ int main(int argc, char *argv[])
 
 static int mainPhase(){
 	int response = 0;
-	int i;
 	static int transferred;
-
+	int i;
+	
 	struct libusb_config_descriptor* config_desc;
 	const struct libusb_interface_descriptor* interface_desc;
 	
@@ -100,12 +102,10 @@ static int mainPhase(){
 	printf("MaxPower %i\n", config_desc->MaxPower);
 	
 	/* Send something */
-	memset(buffer, 0xdd, sizeof(buffer));
-	for(i=0; i<16; i++){
-		buffer[i] = i;
-	}
+	memset(buffer, 0x0, sizeof(buffer));
+	strncpy((char*)buffer, "some cool message", sizeof(buffer));
 
-	response = libusb_bulk_transfer(handle, OUT, buffer, 32, &transferred, 5000);
+	response = libusb_bulk_transfer(handle, OUT, buffer, 64, &transferred, 5000);
 	if(response < 0){
 		error(response);
 		return -1;
@@ -117,7 +117,7 @@ static int mainPhase(){
 
 	/* Receive back something */
 	memset(buffer, 0x0, sizeof(buffer));
-	response = libusb_bulk_transfer(handle, IN, buffer, 32, &transferred, 5000);
+	response = libusb_bulk_transfer(handle, IN, buffer, 64, &transferred, 5000);
 	if(response < 0){
 		error(response);
 		return -1;
@@ -127,6 +127,8 @@ static int mainPhase(){
 		status(response);
 	}
 
+	printf("Received: %s\n", buffer);
+	
 	for(i=0; i<128; i++)
 		printf("%i ", buffer[i]);
 	printf("\n");
