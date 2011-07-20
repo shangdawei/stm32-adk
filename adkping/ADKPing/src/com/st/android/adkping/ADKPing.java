@@ -11,6 +11,8 @@ import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -40,6 +42,9 @@ public class ADKPing extends Activity implements Runnable
 	LinearLayout layout;
 	ScrollView scrollView;
 	TextView logTextView;
+	EditText messageText;
+	Button setTextbutton;
+	String messageString;
 	
 	Handler mHandler;
   
@@ -93,7 +98,7 @@ public class ADKPing extends Activity implements Runnable
 				for(i=0; i<buffer.length; i++){
 					if(buffer[i] == 0) break;
 				}			
-				String stringToSend = new String(buffer, 0, i, "US-ASCII") + " zio";
+				String stringToSend = new String(buffer, 0, i, "US-ASCII") + " " + messageString;
 				byte[] bufferToSend = stringToSend.getBytes("US-ASCII");
 				
 				/* Send buffer */
@@ -146,7 +151,14 @@ public class ADKPing extends Activity implements Runnable
 		setContentView(R.layout.main);
 		logTextView = (TextView)findViewById(R.id.logTextView);
 		scrollView = (ScrollView)findViewById(R.id.ScrollView01);
-
+		messageText = (EditText)findViewById(R.id.editText);
+		setTextbutton = (Button)findViewById(R.id.setTextButton);
+		setTextbutton.setOnClickListener(new OnClickListener() {
+		    @Override
+		    public void onClick(View v) {
+		      messageString = messageText.getText().toString();
+		    }
+		  });
 		
 		/* Set up message handler used to update the UI from different thread 
 		 * which would crash UI with "CalledFromWrongThreadException" otherwise
