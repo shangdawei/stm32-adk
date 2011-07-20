@@ -15,23 +15,21 @@
 
 /* Nexus-One IDs */
 #define VID 0x18D1
-/* PID used with USB debugging disabled */
-//#define PID 0x4E11
-/* PID used with USB debugging enabled */
-#define PID 0x4E12
+#define PID 0x4E11      /* PID used with USB debugging disabled */
+#define PID_DBG 0x4E12  /* PID used with USB debugging enabled */
 
 
 /* Google Accessory IDs */
 #define ACCESSORY_VID 0x18D1
 #define ACCESSORY_PID 0x2D00
-#define ACCESSORY_PID_ALT 0x2D01
+#define ACCESSORY_PID_DBG 0x2D01
 
 
 /* Nexus-One Accessory device end points */
 #define IN  0x83
 #define OUT 0x03
 
-unsigned char buffer[1024];
+unsigned char buffer[128];
 
 static int mainPhase();
 static int deInit(void);
@@ -55,7 +53,7 @@ int main(int argc, char *argv[])
 	libusb_set_debug(NULL, 3);
 
 	/* Try to open directly accessory. If it's not there, try to switch phone to it */
-	handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID_ALT);
+	handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID_DBG);
 	//if(handle)
 		//libusb_reset_device(handle);
 
@@ -101,11 +99,11 @@ static int mainPhase(){
 	printf("bNumInterfaces %i\n", config_desc->bNumInterfaces);
 	printf("MaxPower %i\n", config_desc->MaxPower);
 	
-	/* Send something */
+	/* Send our host name to device */
 	memset(buffer, 0x0, sizeof(buffer));
-	strncpy((char*)buffer, "some cool message", sizeof(buffer));
+	gethostname((char*)buffer, sizeof(buffer));
 
-	response = libusb_bulk_transfer(handle, OUT, buffer, 64, &transferred, 5000);
+	response = libusb_bulk_transfer(handle, OUT, buffer, sizeof(buffer), &transferred, 5000);
 	if(response < 0){
 		error(response);
 		return -1;
@@ -115,9 +113,9 @@ static int mainPhase(){
 		status(response);
 	}
 
-	/* Receive back something */
+	/* Receive back device response */
 	memset(buffer, 0x0, sizeof(buffer));
-	response = libusb_bulk_transfer(handle, IN, buffer, 64, &transferred, 5000);
+	response = libusb_bulk_transfer(handle, IN, buffer, sizeof(buffer), &transferred, 5000);
 	if(response < 0){
 		error(response);
 		return -1;
@@ -129,7 +127,7 @@ static int mainPhase(){
 
 	printf("Received: %s\n", buffer);
 	
-	for(i=0; i<128; i++)
+	for(i=0; i<sizeof(buffer); i++)
 		printf("%i ", buffer[i]);
 	printf("\n");
 	
@@ -158,7 +156,7 @@ int connectAccessory(void)
 	/* Try connecting to Accessory device with proper PID/VID */
 	for(;;){
 		tries--;
-		if((handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID_ALT)) == NULL){
+		if((handle = libusb_open_device_with_vid_pid(NULL, ACCESSORY_VID, ACCESSORY_PID_DBG)) == NULL){
 			if(tries < 0){
 				return -1;
 			}
@@ -207,7 +205,7 @@ static int setupAccessory(
 	int response;
 
 	/* Open Nexus One device */
-	if((handle = libusb_open_device_with_vid_pid(NULL, VID, PID)) == NULL){
+	if((handle = libusb_open_device_with_vid_pid(NULL, VID, PID_DBG)) == NULL){
 		fprintf(stdout, "Problem acquireing handle\n");
 		return -1;
 	}
