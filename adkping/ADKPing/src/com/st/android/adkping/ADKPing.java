@@ -64,6 +64,7 @@ public class ADKPing extends Activity implements Runnable
 	};
 
 
+	/* Inter-thread communication for appending debug text in UI */
 	void sendText(String text)
 	{
 		Message msg = new Message();
@@ -77,35 +78,40 @@ public class ADKPing extends Activity implements Runnable
 	public void run()
 	{
 		int ret = 0;
+		
 		byte[] buffer = new byte[16384];
 
 		while(true){
 			try{
 				sendText("Receiving data\n");
-			
+				/* Receive buffer */
 				ret = accessoryInput.read(buffer);
-
-				sendText("Received" + ret + "bytes\n");
-
-				buffer[0] = 'c';
-				buffer[1] = 'i';
-				buffer[2] = 'a';
-				buffer[3] = 'o';
-        
-				sendText("Sending back data\n");
+				sendText("Received " + ret + " bytes\n");
 				
-				accessoryOutput.write(buffer, 0, ret);
+				/* Prepare reply buffer */
+				int i;
+				for(i=0; i<buffer.length; i++){
+					if(buffer[i] == 0) break;
+				}			
+				String stringToSend = new String(buffer, 0, i, "US-ASCII") + " zio";
+				byte[] bufferToSend = stringToSend.getBytes("US-ASCII");
 				
+				/* Send buffer */
+				sendText("Sending back " + bufferToSend.length + " bytes\n");
+				accessoryOutput.write(bufferToSend, 0, bufferToSend.length);				
 				sendText("Sent\n");
 			}
 			catch (IOException e){
+				/* Just get out */
 				sendText("Exception in reading/writing accessory\n");
 				logger.debug("Exception in USB accessory input reading", e);
+				break;
 			}
 		}
 	}
 
 	
+	/* Scrolls the textview to the end */
 	private void scrollToEnd()
 	{
 		/* A simple scrollView.fullScroll(View.FOCUS_DOWN) wont work, as
@@ -156,6 +162,22 @@ public class ADKPing extends Activity implements Runnable
 				scrollToEnd();
 				}
 		};
+	
+		byte[] buffer = new byte[128];
+		buffer[0] = 'c';
+		buffer[1] = 'i';
+		buffer[2] = 'a';
+		buffer[3] = 'o';
+		buffer[4] = 0;
+		String test = null;
+		try{
+			test = new String(buffer, "US-ASCII");
+		}
+		catch(Exception e){
+			logger.debug("Exception:" + e);
+		};
+		logger.debug(test);
+		logger.debug("String length is " + test.length());
 	}
 
 	
