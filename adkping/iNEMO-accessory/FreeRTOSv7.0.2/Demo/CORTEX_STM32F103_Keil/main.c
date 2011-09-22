@@ -83,236 +83,295 @@
  *
  */
 
+#define BOARD_IS_INEMOV2  1
+
 /* Standard includes. */
 #include <stdio.h>
 
 /* Scheduler includes. */
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h"
+#include "queue.h"	 
+#include "semphr.h"
+#include "serial.h"		  
 
 /* Library includes. */
 #include "stm32f10x_it.h"
+#include "stm32f10x_tim.h"
+#include "stm32f10x_gpio.h"
+#include "stm32f10x_exti.h"
+#include "stm32f10x_spi.h"
 
-/* Demo app includes. */
-#include "lcd.h"
-#include "LCD_Message.h"
-#include "BlockQ.h"
-#include "death.h"
-#include "integer.h"
-#include "blocktim.h"
-#include "partest.h"
-#include "semtest.h"
-#include "PollQ.h"
-#include "flash.h"
-#include "comtest2.h"
 
-/* Task priorities. */
-#define mainQUEUE_POLL_PRIORITY				( tskIDLE_PRIORITY + 2 )
-#define mainCHECK_TASK_PRIORITY				( tskIDLE_PRIORITY + 3 )
-#define mainSEM_TEST_PRIORITY				( tskIDLE_PRIORITY + 1 )
-#define mainBLOCK_Q_PRIORITY				( tskIDLE_PRIORITY + 2 )
-#define mainCREATOR_TASK_PRIORITY           ( tskIDLE_PRIORITY + 3 )
-#define mainFLASH_TASK_PRIORITY				( tskIDLE_PRIORITY + 1 )
-#define mainCOM_TEST_PRIORITY				( tskIDLE_PRIORITY + 1 )
-#define mainINTEGER_TASK_PRIORITY           ( tskIDLE_PRIORITY )
+/* From Arduino USB firmware */
 
-/* Constants related to the LCD. */
-#define mainMAX_LINE						( 240 )
-#define mainROW_INCREMENT					( 24 )
-#define mainMAX_COLUMN						( 20 )
-#define mainCOLUMN_START					( 319 )
-#define mainCOLUMN_INCREMENT 				( 16 )
+#define rUSBIRQ     0x68    //13<<3
+/* USBIRQ Bits  */
+#define bmVBUSIRQ   0x40    //b6
+#define bmNOVBUSIRQ 0x20    //b5
+#define bmOSCOKIRQ  0x01    //b0
+#define rUSBCTL     0x78    //15<<3
+/* USBCTL Bits  */
+#define bmCHIPRES   0x20    //b5
+#define bmPWRDOWN   0x10    //b4
 
-/* The maximum number of message that can be waiting for display at any one
-time. */
-#define mainLCD_QUEUE_SIZE					( 3 )
+#define rPINCTL     0x88    //17<<3
+/* PINCTL Bits  */
+#define bmFDUPSPI   0x10    //b4
+#define bmINTLEVEL  0x08    //b3
+#define bmPOSINT    0x04    //b2
+#define bmGPXB      0x02    //b1
+#define bmGPXA      0x01    //b0
 
-/* The check task uses the sprintf function so requires a little more stack. */
-#define mainCHECK_TASK_STACK_SIZE			( configMINIMAL_STACK_SIZE + 50 )
-
-/* Dimensions the buffer into which the jitter time is written. */
-#define mainMAX_MSG_LEN						25
-
-/* The time between cycles of the 'check' task. */
-#define mainCHECK_DELAY						( ( portTickType ) 5000 / portTICK_RATE_MS )
-
-/* The number of nano seconds between each processor clock. */
-#define mainNS_PER_CLOCK ( ( unsigned portLONG ) ( ( 1.0 / ( double ) configCPU_CLOCK_HZ ) * 1000000000.0 ) )
-
-/* Baud rate used by the comtest tasks. */
-#define mainCOM_TEST_BAUD_RATE		( 115200 )
-
-/* The LED used by the comtest tasks. See the comtest.c file for more
-information. */
-#define mainCOM_TEST_LED			( 3 )
-
-/*-----------------------------------------------------------*/
+#define rREVISION   0x90    //18<<3
 
 /*
  * Configure the clocks, GPIO and other peripherals as required by the demo.
  */
 static void prvSetupHardware( void );
 
-/*
- * Configure the LCD as required by the demo.
- */
-static void prvConfigureLCD( void );
+xSemaphoreHandle xBinarySemaphore;
+xComPortHandle uartHandle;
 
-/*
- * The LCD is written two by more than one task so is controlled by a
- * 'gatekeeper' task.  This is the only task that is actually permitted to
- * access the LCD directly.  Other tasks wanting to display a message send
- * the message to the gatekeeper.
- */
-static void vLCDTask( void *pvParameters );
+u8 revision1;
+u8 revision2;
+u8 mydata1;
+u8 mydata2;
 
-/*
- * Retargets the C library printf function to the USART.
- */
-int fputc( int ch, FILE *f );
+void panic(void)
+{
+	GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
+	for(;;);
+}
 
-/*
- * Checks the status of all the demo tasks then prints a message to the
- * display.  The message will be either PASS - and include in brackets the
- * maximum measured jitter time (as described at the to of the file), or a
- * message that describes which of the standard demo tasks an error has been
- * discovered in.
- *
- * Messages are not written directly to the terminal, but passed to vLCDTask
- * via a queue.
- */
-static void vCheckTask( void *pvParameters );
 
-/*
- * Configures the timers and interrupts for the fast interrupt test as
- * described at the top of this file.
- */
-extern void vSetupTimerTest( void );
+void gpiosInit(void)
+{
+	GPIO_InitTypeDef gpioInit;
+	EXTI_InitTypeDef extiInit;
+    NVIC_InitTypeDef NVIC_InitStructure;
 
-/*-----------------------------------------------------------*/
+	/* Enable iNemo LED PB9 */
+	GPIO_StructInit(&gpioInit);
+	gpioInit.GPIO_Pin = GPIO_Pin_9;
+	gpioInit.GPIO_Mode = GPIO_Mode_Out_PP;
+	gpioInit.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_Init(GPIOB, &gpioInit);
 
-/* The queue used to send messages to the LCD task. */
-xQueueHandle xLCDQueue;
+	/* Enable PB0 for output */
+	GPIO_StructInit(&gpioInit);
+	gpioInit.GPIO_Pin = GPIO_Pin_0;
+	gpioInit.GPIO_Mode = GPIO_Mode_Out_PP;
+	gpioInit.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_Init(GPIOB, &gpioInit);
 
-/*-----------------------------------------------------------*/
+	/* Enable PC7 for output */
+	GPIO_StructInit(&gpioInit);
+	gpioInit.GPIO_Pin = GPIO_Pin_7;
+	gpioInit.GPIO_Mode = GPIO_Mode_Out_PP;
+	gpioInit.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_Init(GPIOC, &gpioInit);
+
+	/* Enable PC3 for output */
+	GPIO_StructInit(&gpioInit);
+	gpioInit.GPIO_Pin = GPIO_Pin_3;
+	gpioInit.GPIO_Mode = GPIO_Mode_Out_PP;
+	gpioInit.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_Init(GPIOC, &gpioInit);
+}
+
+
+void regWr(u8 reg, u8 val)
+{
+	/* Slave select low */
+	//vTaskDelay(10);
+	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_RESET);
+	vTaskDelay(1);
+
+	/* Send command: since we are writing set command bit accordingly */
+	reg |= 0x02;
+	SPI_SendData(SPI1, reg);
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
+	
+	/* Dummy read */
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
+  	SPI_ReceiveData(SPI1);
+		
+	/* Send value */
+	SPI_SendData(SPI1, val);
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
+
+	/* Dummy read */
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
+  	SPI_ReceiveData(SPI1);
+
+	/* Slave select hi */
+	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
+	vTaskDelay(1);
+}			 
+
+/* Cfr:  LCD_ReadReg */
+u8 regRd(u8 reg)
+{
+	u8 rddata;
+
+	/* Slave select low. According to Maxim spec (p13), we should wait at
+	 * least tl=30ns */
+	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_RESET);
+	vTaskDelay(1);
+	
+	/* Send command */
+	SPI_SendData(SPI1, reg);
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
+
+	/* Dummy read */
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
+  	SPI_ReceiveData(SPI1);	
+
+	/* Dummy write */
+	SPI_SendData(SPI1, 0xFF);
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
+  	
+	/* Actual read */
+	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
+  	rddata = SPI_ReceiveData(SPI1);
+
+	/* Slave select hi. Should wait tcsw=300 ns before next transfer */
+	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
+	vTaskDelay(1);
+
+	return rddata;
+}
+
+u8 testval;
+
+void spiTask(void* params)
+{	
+	
+	/* SS high */
+	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
+	vTaskDelay(1);
+
+	/* Set Full Duplex mode: 0x8a (TX), 0x1a (TX)*/
+	regWr(rPINCTL, bmFDUPSPI + bmINTLEVEL + bmGPXB);
+	//regWr(rPINCTL, bmFDUPSPI);
+
+	/* Reset */
+	//regWr( rUSBCTL, bmCHIPRES );                        //Chip reset. This stops the oscillator
+    //regWr( rUSBCTL, 0x00 );                             //Remove the reset
+	//while(!(regRd( rUSBIRQ ) & bmOSCOKIRQ )){} 			//wait until the PLL is stable
+
+	/* Read revision: 0x90(TX), 0x12 (or 0x48) (RX) */
+	revision1 = regRd(rREVISION);
+	revision2 = regRd(rREVISION);
+	mydata1 = regRd(rPINCTL);
+	mydata2 = regRd(rPINCTL);
+
+	regWr(20<<3, 0xb);
+	testval = regRd(20<<3);
+
+	uartHandle = xSerialPortInitMinimal(115200, 32);
+
+	while(1){	
+		/* LED activity */
+		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
+		vTaskDelay(200);
+		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_RESET);
+		vTaskDelay(200);
+
+		vSerialPutString(uartHandle, "bella zia ", 10);
+	}
+}
+
+
+void vTimer2IntHandler( void )
+{
+	static portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+
+	/* 'Give' the semaphore to unblock the task. */
+	xSemaphoreGiveFromISR( xBinarySemaphore, &xHigherPriorityTaskWoken );
+
+	if( xHigherPriorityTaskWoken == pdTRUE )
+	{
+		/* Giving the semaphore unblocked a task, and the priority of the
+		unblocked task is higher than the currently running task - force
+		a context switch to ensure that the interrupt returns directly to
+		the unblocked (higher priority) task.
+
+		NOTE: The syntax for forcing a context switch is different depending
+		on the port being used.  Refer to the examples for the port you are
+		using for the correct method to use! */
+		taskYIELD();
+	}
+
+	/* ACK interrupt */
+    TIM_ClearITPendingBit( TIM2, TIM_IT_Update );
+
+	/* Read back the IRQ status to avoid double IRQ race */
+	/* See https://my.st.com/public/STe2ecommunities/mcu/Lists/ARM%20CortexM3%20STM32/Flat.aspx?RootFolder=%2Fpublic%2FSTe2ecommunities%2Fmcu%2FLists%2FARM%20CortexM3%20STM32%2FTimer%20update%20event%20interrupt%20retriggering%20after%20exit&FolderCTID=0x01200200770978C69A1141439FE559EB459D758000626BE2B829C32145B9EB5739142DC17E&currentviews=241 */
+	/* See https://my.st.com/public/FAQ/Lists/faqlist/DispForm.aspx?ID=144&level=1&objectid=141&type=product&Source=%2fpublic%2fFAQ%2ffaq.aspx%3flevel%3d1%26objectid%3d141%26type%3dproduct */
+	TIM_GetITStatus(TIM2, TIM_IT_Update);
+}
+
+
+int SPI_Config()
+{
+	SPI_InitTypeDef    SPI_InitStructure;
+	GPIO_InitTypeDef   GPIO_InitStructure;	
+
+  	/* Enable SPI1 clock  */
+  	RCC_APB1PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
+
+  	/* Configure SPI1 pins: NSS, SCK, MISO and MOSI */
+  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
+  	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+  	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+
+	/* SPI1 Config (cfr. Demo/Common/drivers/ST/STM32F10xFWLib/src/lcd.c) */
+  	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+  	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+  	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+  	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+  	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
+  	//SPI_InitStructure.SPI_NSS = SPI_NSS_Hard;
+	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+  	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_128;
+  	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+  	SPI_Init(SPI1, &SPI_InitStructure);
+
+  	/* SPI2 enable */
+  	SPI_Cmd(SPI1, ENABLE);
+
+	return 0;
+}
+
 
 int main( void )
-{
-#ifdef DEBUG
-  debug();
-#endif
+{  
+ 	int err;
 
-	prvSetupHardware();
 
-	/* Create the queue used by the LCD task.  Messages for display on the LCD
-	are received via this queue. */
-	xLCDQueue = xQueueCreate( mainLCD_QUEUE_SIZE, sizeof( xLCDMessage ) );
+  	prvSetupHardware();
+	gpiosInit();
+	SPI_Config();
+   	
 	
-	/* Start the standard demo tasks. */
-	vStartBlockingQueueTasks( mainBLOCK_Q_PRIORITY );
-    vCreateBlockTimeTasks();
-    vStartSemaphoreTasks( mainSEM_TEST_PRIORITY );
-    vStartPolledQueueTasks( mainQUEUE_POLL_PRIORITY );
-    vStartIntegerMathTasks( mainINTEGER_TASK_PRIORITY );
-	vStartLEDFlashTasks( mainFLASH_TASK_PRIORITY );
-	vAltStartComTestTasks( mainCOM_TEST_PRIORITY, mainCOM_TEST_BAUD_RATE, mainCOM_TEST_LED );
+  	err = xTaskCreate(spiTask, (signed portCHAR*) "SPI", 256, NULL, tskIDLE_PRIORITY + 1, NULL );
+  	if(err != pdPASS)
+  		panic();
 
-	/* Start the tasks defined within this file/specific to this demo. */
-    xTaskCreate( vCheckTask, ( signed portCHAR * ) "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );	
-	xTaskCreate( vLCDTask, ( signed portCHAR * ) "LCD", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
-
-	/* The suicide tasks must be created last as they need to know how many
-	tasks were running prior to their creation in order to ascertain whether
-	or not the correct/expected number of tasks are running at any given time. */
-    vCreateSuicidalTasks( mainCREATOR_TASK_PRIORITY );
-	
-	/* Configure the timers used by the fast interrupt timer test. */
-	vSetupTimerTest();
-	
 	/* Start the scheduler. */
 	vTaskStartScheduler();
 	
 	/* Will only get here if there was not enough heap space to create the
 	idle task. */
+	panic();
+
 	return 0;
 }
-/*-----------------------------------------------------------*/
 
-void vLCDTask( void *pvParameters )
-{
-xLCDMessage xMessage;
-
-	/* Initialise the LCD and display a startup message. */
-	prvConfigureLCD();
-	LCD_DrawMonoPict( ( unsigned portLONG * ) pcBitmap );
-
-	for( ;; )
-	{
-		/* Wait for a message to arrive that requires displaying. */
-		while( xQueueReceive( xLCDQueue, &xMessage, portMAX_DELAY ) != pdPASS );
-
-		/* Display the message.  Print each message to a different position. */
-		printf( ( portCHAR const * ) xMessage.pcMessage );
-	}
-}
-/*-----------------------------------------------------------*/
-
-static void vCheckTask( void *pvParameters )
-{
-portTickType xLastExecutionTime;
-xLCDMessage xMessage;
-static signed portCHAR cPassMessage[ mainMAX_MSG_LEN ];
-extern unsigned portSHORT usMaxJitter;
-
-	xLastExecutionTime = xTaskGetTickCount();
-	xMessage.pcMessage = cPassMessage;
-	
-    for( ;; )
-	{
-		/* Perform this check every mainCHECK_DELAY milliseconds. */
-		vTaskDelayUntil( &xLastExecutionTime, mainCHECK_DELAY );
-
-		/* Has an error been found in any task? */
-
-        if( xAreBlockingQueuesStillRunning() != pdTRUE )
-		{
-			xMessage.pcMessage = "ERROR IN BLOCK Q\n";
-		}
-		else if( xAreBlockTimeTestTasksStillRunning() != pdTRUE )
-		{
-			xMessage.pcMessage = "ERROR IN BLOCK TIME\n";
-		}
-        else if( xAreSemaphoreTasksStillRunning() != pdTRUE )
-        {
-            xMessage.pcMessage = "ERROR IN SEMAPHORE\n";
-        }
-        else if( xArePollingQueuesStillRunning() != pdTRUE )
-        {
-            xMessage.pcMessage = "ERROR IN POLL Q\n";
-        }
-        else if( xIsCreateTaskStillRunning() != pdTRUE )
-        {
-            xMessage.pcMessage = "ERROR IN CREATE\n";
-        }
-        else if( xAreIntegerMathsTaskStillRunning() != pdTRUE )
-        {
-            xMessage.pcMessage = "ERROR IN MATH\n";
-        }
-		else if( xAreComTestTasksStillRunning() != pdTRUE )
-		{
-			xMessage.pcMessage = "ERROR IN COM TEST\n";
-		}				
-		else
-		{
-			sprintf( ( portCHAR * ) cPassMessage, "PASS [%uns]\n", ( ( unsigned portLONG ) usMaxJitter ) * mainNS_PER_CLOCK );
-		}
-
-		/* Send the message to the LCD gatekeeper for display. */
-		xQueueSend( xLCDQueue, &xMessage, portMAX_DELAY );
-	}
-}
-/*-----------------------------------------------------------*/
 
 static void prvSetupHardware( void )
 {
@@ -337,10 +396,22 @@ static void prvSetupHardware( void )
 	RCC_PCLK2Config( RCC_HCLK_Div1 );
 
 	/* PCLK1 = HCLK/2 */
-	RCC_PCLK1Config( RCC_HCLK_Div2 );
-
+#if BOARD_IS_INEMOV2
+	RCC_PCLK1Config( RCC_HCLK_Div2 );	  //STMF103	Max 32MHz
+#elif BOARD_IS_DISCOVERY
+	RCC_PCLK1Config( RCC_HCLK_Div1 );	  //STMF100	Max 24MHz
+#else
+#error "Please define either BOARD_IS_INEMOV2 or BOARD_IS_DISCOVERY"
+#endif
+	
 	/* PLLCLK = 8MHz * 9 = 72 MHz. */
-	RCC_PLLConfig( RCC_PLLSource_HSE_Div1, RCC_PLLMul_9 );
+#if BOARD_IS_INEMOV2
+	RCC_PLLConfig( RCC_PLLSource_HSE_Div1, RCC_PLLMul_9 ); //STMF103 @72MHz
+#elif BOARD_IS_DISCOVERY
+	RCC_PLLConfig( RCC_PLLSource_HSE_Div1, RCC_PLLMul_3 );	 //STMF100 @24MHz
+#else
+#error "Please define either BOARD_IS_INEMOV2 or BOARD_IS_DISCOVERY"
+#endif
 
 	/* Enable PLL. */
 	RCC_PLLCmd( ENABLE );
@@ -360,10 +431,11 @@ static void prvSetupHardware( void )
 
 	/* Enable GPIOA, GPIOB, GPIOC, GPIOD, GPIOE and AFIO clocks */
 	RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |RCC_APB2Periph_GPIOC
-							| RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_AFIO, ENABLE );
+							| RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_AFIO
+							| RCC_APB2Periph_ALL , ENABLE );
 
 	/* SPI2 Periph clock enable */
-	RCC_APB1PeriphClockCmd( RCC_APB1Periph_SPI2, ENABLE );
+	RCC_APB1PeriphClockCmd( RCC_APB1Periph_SPI2 | RCC_APB1Periph_ALL, ENABLE );
 
 
 	/* Set the Vector Table base address at 0x08000000 */
@@ -373,88 +445,8 @@ static void prvSetupHardware( void )
 	
 	/* Configure HCLK clock as SysTick clock source. */
 	SysTick_CLKSourceConfig( SysTick_CLKSource_HCLK );
-	
-	vParTestInitialise();
+
+	/* Enable prefetch */
+	*((unsigned long*)(0x40022000)) = 0x12;
 }
-/*-----------------------------------------------------------*/
 
-static void prvConfigureLCD( void )
-{
-GPIO_InitTypeDef GPIO_InitStructure;
-
-	/* Configure LCD Back Light (PA8) as output push-pull */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init( GPIOA, &GPIO_InitStructure );
-
-	/* Set the Backlight Pin */
-	GPIO_WriteBit(GPIOA, GPIO_Pin_8, Bit_SET);
-
-	/* Initialize the LCD */
-	LCD_Init();
-
-	/* Set the Back Color */
-	LCD_SetBackColor( White );
-
-	/* Set the Text Color */
-	LCD_SetTextColor( 0x051F );
-
-	LCD_Clear();
-}
-/*-----------------------------------------------------------*/
-
-int fputc( int ch, FILE *f )
-{
-static unsigned portSHORT usColumn = 0, usRefColumn = mainCOLUMN_START;
-static unsigned portCHAR ucLine = 0;
-
-	if( ( usColumn == 0 ) && ( ucLine == 0 ) )
-	{
-		LCD_Clear();
-	}
-
-	if( ch != '\n' )
-	{
-		/* Display one character on LCD */
-		LCD_DisplayChar( ucLine, usRefColumn, (u8) ch );
-		
-		/* Decrement the column position by 16 */
-		usRefColumn -= mainCOLUMN_INCREMENT;
-		
-		/* Increment the character counter */
-		usColumn++;
-		if( usColumn == mainMAX_COLUMN )
-		{
-			ucLine += mainROW_INCREMENT;
-			usRefColumn = mainCOLUMN_START;
-			usColumn = 0;
-		}
-	}
-	else
-	{
-		/* Move back to the first column of the next line. */
-		ucLine += mainROW_INCREMENT;
-		usRefColumn = mainCOLUMN_START;
-		usColumn = 0;	
-	}
-
-	/* Wrap back to the top of the display. */
-	if( ucLine >= mainMAX_LINE )
-	{
-		ucLine = 0;
-	}
-	
-	return ch;
-}
-/*-----------------------------------------------------------*/
-
-#ifdef  DEBUG
-/* Keep the linker happy. */
-void assert_failed( unsigned portCHAR* pcFile, unsigned portLONG ulLine )
-{
-	for( ;; )
-	{
-	}
-}
-#endif
