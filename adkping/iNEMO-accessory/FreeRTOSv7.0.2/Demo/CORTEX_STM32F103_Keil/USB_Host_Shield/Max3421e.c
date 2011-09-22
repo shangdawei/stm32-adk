@@ -1,3 +1,9 @@
+/** USB shield support library. Ported from Google code base "ADK_release_0512"
+ * 
+ * Public methods are preceded with "max3421e" prefix.
+ * Private methods signatures are left unchanged 
+ */ 
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"	 
@@ -5,10 +11,6 @@
 #include "serial.h"		  
 
 /* Library includes. */
-#include "stm32f10x_gpio.h"
-#include "stm32f10x_spi.h"
-#include "stm32f10x_exti.h"
-
 #include "stm32f10x_it.h"
 #include "stm32f10x_tim.h"
 #include "stm32f10x_gpio.h"
