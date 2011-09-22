@@ -1,86 +1,4 @@
-/*
-    FreeRTOS V7.0.2 - Copyright (C) 2011 Real Time Engineers Ltd.
-	
-
-    ***************************************************************************
-     *                                                                       *
-     *    FreeRTOS tutorial books are available in pdf and paperback.        *
-     *    Complete, revised, and edited pdf reference manuals are also       *
-     *    available.                                                         *
-     *                                                                       *
-     *    Purchasing FreeRTOS documentation will not only help you, by       *
-     *    ensuring you get running as quickly as possible and with an        *
-     *    in-depth knowledge of how to use FreeRTOS, it will also help       *
-     *    the FreeRTOS project to continue with its mission of providing     *
-     *    professional grade, cross platform, de facto standard solutions    *
-     *    for microcontrollers - completely free of charge!                  *
-     *                                                                       *
-     *    >>> See http://www.FreeRTOS.org/Documentation for details. <<<     *
-     *                                                                       *
-     *    Thank you for using FreeRTOS, and thank you for your support!      *
-     *                                                                       *
-    ***************************************************************************
-
-
-    This file is part of the FreeRTOS distribution.
-
-    FreeRTOS is free software; you can redistribute it and/or modify it under
-    the terms of the GNU General Public License (version 2) as published by the
-    Free Software Foundation AND MODIFIED BY the FreeRTOS exception.
-    >>>NOTE<<< The modification to the GPL is included to allow you to
-    distribute a combined work that includes FreeRTOS without being obliged to
-    provide the source code for proprietary components outside of the FreeRTOS
-    kernel.  FreeRTOS is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-    more details. You should have received a copy of the GNU General Public
-    License and the FreeRTOS license exception along with FreeRTOS; if not it
-    can be viewed here: http://www.freertos.org/a00114.html and also obtained
-    by writing to Richard Barry, contact details for whom are available on the
-    FreeRTOS WEB site.
-
-    1 tab == 4 spaces!
-
-    http://www.FreeRTOS.org - Documentation, latest information, license and
-    contact details.
-
-    http://www.SafeRTOS.com - A version that is certified for use in safety
-    critical systems.
-
-    http://www.OpenRTOS.com - Commercial support, development, porting,
-    licensing and training services.
-*/
-
-/*
- * Creates all the demo application tasks, then starts the scheduler.  The WEB
- * documentation provides more details of the standard demo application tasks.
- * In addition to the standard demo tasks, the following tasks and tests are
- * defined and/or created within this file:
- *
- * "Fast Interrupt Test" - A high frequency periodic interrupt is generated
- * using a free running timer to demonstrate the use of the
- * configKERNEL_INTERRUPT_PRIORITY configuration constant.  The interrupt
- * service routine measures the number of processor clocks that occur between
- * each interrupt - and in so doing measures the jitter in the interrupt timing.
- * The maximum measured jitter time is latched in the ulMaxJitter variable, and
- * displayed on the LCD by the 'Check' task as described below.  The
- * fast interrupt is configured and handled in the timertest.c source file.
- *
- * "LCD" task - the LCD task is a 'gatekeeper' task.  It is the only task that
- * is permitted to access the display directly.  Other tasks wishing to write a
- * message to the LCD send the message on a queue to the LCD task instead of
- * accessing the LCD themselves.  The LCD task just blocks on the queue waiting
- * for messages - waking and displaying the messages as they arrive.
- *
- * "Check" task -  This only executes every five seconds but has the highest
- * priority so is guaranteed to get processor time.  Its main function is to
- * check that all the standard demo tasks are still operational.  Should any
- * unexpected behaviour within a demo task be discovered the 'check' task will
- * write an error to the LCD (via the LCD task).  If all the demo tasks are
- * executing with their expected behaviour then the check task writes PASS
- * along with the max jitter time to the LCD (again via the LCD task), as
- * described above.
- *
+/** iNEMO ADK Accessory firmware
  */
 
 #define BOARD_IS_INEMOV2  1
@@ -102,28 +20,9 @@
 #include "stm32f10x_exti.h"
 #include "stm32f10x_spi.h"
 
+#include "Max3421e.h"
+#include "Max3421e_constants.h"
 
-/* From Arduino USB firmware */
-
-#define rUSBIRQ     0x68    //13<<3
-/* USBIRQ Bits  */
-#define bmVBUSIRQ   0x40    //b6
-#define bmNOVBUSIRQ 0x20    //b5
-#define bmOSCOKIRQ  0x01    //b0
-#define rUSBCTL     0x78    //15<<3
-/* USBCTL Bits  */
-#define bmCHIPRES   0x20    //b5
-#define bmPWRDOWN   0x10    //b4
-
-#define rPINCTL     0x88    //17<<3
-/* PINCTL Bits  */
-#define bmFDUPSPI   0x10    //b4
-#define bmINTLEVEL  0x08    //b3
-#define bmPOSINT    0x04    //b2
-#define bmGPXB      0x02    //b1
-#define bmGPXA      0x01    //b0
-
-#define rREVISION   0x90    //18<<3
 
 /*
  * Configure the clocks, GPIO and other peripherals as required by the demo.
@@ -180,80 +79,12 @@ void gpiosInit(void)
 	GPIO_Init(GPIOC, &gpioInit);
 }
 
-
-void regWr(u8 reg, u8 val)
-{
-	/* Slave select low */
-	//vTaskDelay(10);
-	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_RESET);
-	vTaskDelay(1);
-
-	/* Send command: since we are writing set command bit accordingly */
-	reg |= 0x02;
-	SPI_SendData(SPI1, reg);
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
-	
-	/* Dummy read */
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
-  	SPI_ReceiveData(SPI1);
-		
-	/* Send value */
-	SPI_SendData(SPI1, val);
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
-
-	/* Dummy read */
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
-  	SPI_ReceiveData(SPI1);
-
-	/* Slave select hi */
-	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
-	vTaskDelay(1);
-}			 
-
-/* Cfr:  LCD_ReadReg */
-u8 regRd(u8 reg)
-{
-	u8 rddata;
-
-	/* Slave select low. According to Maxim spec (p13), we should wait at
-	 * least tl=30ns */
-	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_RESET);
-	vTaskDelay(1);
-	
-	/* Send command */
-	SPI_SendData(SPI1, reg);
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
-
-	/* Dummy read */
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
-  	SPI_ReceiveData(SPI1);	
-
-	/* Dummy write */
-	SPI_SendData(SPI1, 0xFF);
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_TXE) == RESET){}
-  	
-	/* Actual read */
-	while(SPI_GetFlagStatus(SPI1, SPI_FLAG_RXNE)== RESET){}
-  	rddata = SPI_ReceiveData(SPI1);
-
-	/* Slave select hi. Should wait tcsw=300 ns before next transfer */
-	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
-	vTaskDelay(1);
-
-	return rddata;
-}
-
 u8 testval;
 
 void spiTask(void* params)
 {	
-	
-	/* SS high */
-	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
-	vTaskDelay(1);
-
 	/* Set Full Duplex mode: 0x8a (TX), 0x1a (TX)*/
-	regWr(rPINCTL, bmFDUPSPI + bmINTLEVEL + bmGPXB);
+	max3421eRegWr(rPINCTL, bmFDUPSPI + bmINTLEVEL + bmGPXB);
 	//regWr(rPINCTL, bmFDUPSPI);
 
 	/* Reset */
@@ -262,13 +93,13 @@ void spiTask(void* params)
 	//while(!(regRd( rUSBIRQ ) & bmOSCOKIRQ )){} 			//wait until the PLL is stable
 
 	/* Read revision: 0x90(TX), 0x12 (or 0x48) (RX) */
-	revision1 = regRd(rREVISION);
-	revision2 = regRd(rREVISION);
-	mydata1 = regRd(rPINCTL);
-	mydata2 = regRd(rPINCTL);
+	revision1 = max3421eRegRd(rREVISION);
+	revision2 = max3421eRegRd(rREVISION);
+	mydata1 = max3421eRegRd(rPINCTL);
+	mydata2 = max3421eRegRd(rPINCTL);
 
-	regWr(20<<3, 0xb);
-	testval = regRd(20<<3);
+	max3421eRegWr(20<<3, 0xb);
+	testval = max3421eRegRd(20<<3);
 
 	uartHandle = xSerialPortInitMinimal(115200, 32);
 
@@ -279,10 +110,9 @@ void spiTask(void* params)
 		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_RESET);
 		vTaskDelay(200);
 
-		vSerialPutString(uartHandle, "bella zia ", 10);
+		vSerialPutString(uartHandle, "bella zio ", 10);
 	}
 }
-
 
 void vTimer2IntHandler( void )
 {
@@ -314,50 +144,14 @@ void vTimer2IntHandler( void )
 }
 
 
-int SPI_Config()
-{
-	SPI_InitTypeDef    SPI_InitStructure;
-	GPIO_InitTypeDef   GPIO_InitStructure;	
-
-  	/* Enable SPI1 clock  */
-  	RCC_APB1PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-
-  	/* Configure SPI1 pins: NSS, SCK, MISO and MOSI */
-  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
-  	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-  	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-
-	/* SPI1 Config (cfr. Demo/Common/drivers/ST/STM32F10xFWLib/src/lcd.c) */
-  	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-  	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-  	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-  	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
-  	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
-  	//SPI_InitStructure.SPI_NSS = SPI_NSS_Hard;
-	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-  	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_128;
-  	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-  	SPI_Init(SPI1, &SPI_InitStructure);
-
-  	/* SPI2 enable */
-  	SPI_Cmd(SPI1, ENABLE);
-
-	return 0;
-}
-
-
 int main( void )
 {  
  	int err;
 
-
   	prvSetupHardware();
 	gpiosInit();
-	SPI_Config();
-   	
-	
+	spi_init();
+
   	err = xTaskCreate(spiTask, (signed portCHAR*) "SPI", 256, NULL, tskIDLE_PRIORITY + 1, NULL );
   	if(err != pdPASS)
   		panic();
