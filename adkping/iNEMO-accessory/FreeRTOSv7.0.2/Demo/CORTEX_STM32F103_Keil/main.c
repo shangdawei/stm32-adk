@@ -91,17 +91,6 @@ void spiTask(void* params)
 	max3421ePowerOn();
 
 
-#if 0
-	/* Set Full Duplex mode: 0x8a (TX), 0x1a (TX)*/
-	//max3421eRegWr(rPINCTL, bmFDUPSPI + bmINTLEVEL + bmGPXB);
-	max3421eRegWr(rPINCTL, bmFDUPSPI);
-
-	/* Reset */
-	max3421eRegWr( rUSBCTL, bmCHIPRES );                        //Chip reset. This stops the oscillator
-    max3421eRegWr( rUSBCTL, 0x00 );                             //Remove the reset
-	while(!(max3421eRegRd( rUSBIRQ ) & bmOSCOKIRQ )){} 			//wait until the PLL is stable
-#endif
-
 	/* Read revision: 0x90(TX), 0x12 (or 0x48) (RX) */
 	revision1 = max3421eRegRd(rREVISION);
 	revision2 = max3421eRegRd(rREVISION);

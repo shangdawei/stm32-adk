@@ -24,6 +24,8 @@
 #include "Max3421e_constants.h"
 
 
+static u8 vbusState;
+
 /* 
  * Public methods
  */
@@ -130,7 +132,7 @@ void max3421ePowerOn(void)
     /* check if device is connected */
     max3421eRegWr( rHCTL,bmSAMPLEBUS );                                 // sample USB bus
     while(!(max3421eRegRd( rHCTL ) & bmSAMPLEBUS ));                    // wait for sample operation to finish
-    //busprobe();                                                       // check if anything is connected
+    busprobe();                                                       // check if anything is connected
     max3421eRegWr( rHIRQ, bmCONDETIRQ );                                // clear connection detect interrupt                 
     max3421eRegWr( rCPUCTL, 0x01 );                                     // enable interrupt pin	
 }
@@ -178,5 +180,43 @@ void pinInit(void)
 	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
 
 	/* Also Reset line MUST be se high otherwise reset() wont work */
+}
+
+
+/* probe bus to determine device presense and speed and switch host to this speed */
+void busprobe(void)
+{
+	u8 bus_sample;
+    bus_sample = max3421eRegRd( rHRSL );            //Get J,K status
+    bus_sample &= ( bmJSTATUS|bmKSTATUS );      //zero the rest of the byte
+    switch( bus_sample ) {                          //start full-speed or low-speed host 
+        case( bmJSTATUS ):
+            if(( max3421eRegRd( rMODE ) & bmLOWSPEED ) == 0 ) {
+                max3421eRegWr( rMODE, MODE_FS_HOST );       //start full-speed host
+                vbusState = FSHOST;
+            }
+            else {
+                max3421eRegWr( rMODE, MODE_LS_HOST);        //start low-speed host
+                vbusState = LSHOST;
+            }
+            break;
+        case( bmKSTATUS ):
+            if(( max3421eRegRd( rMODE ) & bmLOWSPEED ) == 0 ) {
+                max3421eRegWr( rMODE, MODE_LS_HOST );       //start low-speed host
+                vbusState = LSHOST;
+            }
+            else {
+                max3421eRegWr( rMODE, MODE_FS_HOST );       //start full-speed host
+                vbusState = FSHOST;
+            }
+            break;
+        case( bmSE1 ):              //illegal state
+            vbusState = SE1;
+            break;
+        case( bmSE0 ):              //disconnected state
+		max3421eRegWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ);
+            vbusState = SE0;
+            break;
+        }//end switch( bus_sample )
 }
 
