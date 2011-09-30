@@ -47,8 +47,6 @@ void panic(void)
 void gpiosInit(void)
 {
 	GPIO_InitTypeDef gpioInit;
-	EXTI_InitTypeDef extiInit;
-    NVIC_InitTypeDef NVIC_InitStructure;
 
 	/* Enable iNemo LED PB9 */
 	GPIO_StructInit(&gpioInit);
@@ -82,15 +80,27 @@ void gpiosInit(void)
 u8 testval;
 
 void spiTask(void* params)
-{	
+{
+
+	uartHandle = xSerialPortInitMinimal(115200, 32);
+	
+	/* constructor */
+	max3421e();
+
+	/* Power on */
+	max3421ePowerOn();
+
+
+#if 0
 	/* Set Full Duplex mode: 0x8a (TX), 0x1a (TX)*/
-	max3421eRegWr(rPINCTL, bmFDUPSPI + bmINTLEVEL + bmGPXB);
-	//regWr(rPINCTL, bmFDUPSPI);
+	//max3421eRegWr(rPINCTL, bmFDUPSPI + bmINTLEVEL + bmGPXB);
+	max3421eRegWr(rPINCTL, bmFDUPSPI);
 
 	/* Reset */
-	//regWr( rUSBCTL, bmCHIPRES );                        //Chip reset. This stops the oscillator
-    //regWr( rUSBCTL, 0x00 );                             //Remove the reset
-	//while(!(regRd( rUSBIRQ ) & bmOSCOKIRQ )){} 			//wait until the PLL is stable
+	max3421eRegWr( rUSBCTL, bmCHIPRES );                        //Chip reset. This stops the oscillator
+    max3421eRegWr( rUSBCTL, 0x00 );                             //Remove the reset
+	while(!(max3421eRegRd( rUSBIRQ ) & bmOSCOKIRQ )){} 			//wait until the PLL is stable
+#endif
 
 	/* Read revision: 0x90(TX), 0x12 (or 0x48) (RX) */
 	revision1 = max3421eRegRd(rREVISION);
@@ -101,39 +111,54 @@ void spiTask(void* params)
 	max3421eRegWr(20<<3, 0xb);
 	testval = max3421eRegRd(20<<3);
 
-	uartHandle = xSerialPortInitMinimal(115200, 32);
-
 	while(1){	
 		/* LED activity */
 		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
 		vTaskDelay(200);
 		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_RESET);
 		vTaskDelay(200);
-
-		vSerialPutString(uartHandle, "bella zio ", 10);
+		//vSerialPutString(uartHandle, "bella zio ", 10);
 	}
 }
 
+
+ void vSetupTimerTest( void )
+{
+	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	/* Enable timer clocks */
+	RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM2, ENABLE );
+
+	/* Initialise data. */
+	TIM_DeInit( TIM2 );
+	TIM_TimeBaseStructInit( &TIM_TimeBaseStructure );
+
+	/* Time base configuration for timer 2 - which generates the interrupts. */
+	TIM_TimeBaseStructure.TIM_Period = 2000;
+	TIM_TimeBaseStructure.TIM_Prescaler = 4000;
+	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+	TIM_TimeBaseInit( TIM2, &TIM_TimeBaseStructure );
+	TIM_ARRPreloadConfig( TIM2, ENABLE );
+
+	
+	/* Enable TIM2 IT */
+	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init( &NVIC_InitStructure );	
+	TIM_ITConfig( TIM2, TIM_IT_Update, ENABLE );
+
+	/* Finally, enable timer. */
+	TIM_Cmd( TIM2, ENABLE );
+}
+
+int toggle = 0;
+
 void vTimer2IntHandler( void )
 {
-	static portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-
-	/* 'Give' the semaphore to unblock the task. */
-	xSemaphoreGiveFromISR( xBinarySemaphore, &xHigherPriorityTaskWoken );
-
-	if( xHigherPriorityTaskWoken == pdTRUE )
-	{
-		/* Giving the semaphore unblocked a task, and the priority of the
-		unblocked task is higher than the currently running task - force
-		a context switch to ensure that the interrupt returns directly to
-		the unblocked (higher priority) task.
-
-		NOTE: The syntax for forcing a context switch is different depending
-		on the port being used.  Refer to the examples for the port you are
-		using for the correct method to use! */
-		taskYIELD();
-	}
-
 	/* ACK interrupt */
     TIM_ClearITPendingBit( TIM2, TIM_IT_Update );
 
@@ -141,6 +166,11 @@ void vTimer2IntHandler( void )
 	/* See https://my.st.com/public/STe2ecommunities/mcu/Lists/ARM%20CortexM3%20STM32/Flat.aspx?RootFolder=%2Fpublic%2FSTe2ecommunities%2Fmcu%2FLists%2FARM%20CortexM3%20STM32%2FTimer%20update%20event%20interrupt%20retriggering%20after%20exit&FolderCTID=0x01200200770978C69A1141439FE559EB459D758000626BE2B829C32145B9EB5739142DC17E&currentviews=241 */
 	/* See https://my.st.com/public/FAQ/Lists/faqlist/DispForm.aspx?ID=144&level=1&objectid=141&type=product&Source=%2fpublic%2fFAQ%2ffaq.aspx%3flevel%3d1%26objectid%3d141%26type%3dproduct */
 	TIM_GetITStatus(TIM2, TIM_IT_Update);
+
+	if(toggle++ % 2)
+		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
+	else
+		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_RESET);
 }
 
 
@@ -150,7 +180,8 @@ int main( void )
 
   	prvSetupHardware();
 	gpiosInit();
-	spi_init();
+
+	//vSetupTimerTest();
 
   	err = xTaskCreate(spiTask, (signed portCHAR*) "SPI", 256, NULL, tskIDLE_PRIORITY + 1, NULL );
   	if(err != pdPASS)

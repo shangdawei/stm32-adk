@@ -21,6 +21,7 @@
 #include "stm32f10x_spi.h"
 
 #include "Max3421e.h"
+#include "Max3421e_constants.h"
 
 
 /* 
@@ -28,7 +29,7 @@
  */
 
 
-void Max3421e(void)
+void max3421e(void)
 {
 	pinInit();
 	spi_init();
@@ -41,7 +42,7 @@ void max3421eRegWr(u8 reg, u8 val)
 	 * The software SS 	SPI_SSOutputCmd(SPI1, ENABLE);
 	 * is not working properly, relying on GPIO instead */
 	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_RESET);
-
+	
 	/* Send command: since we are writing set command bit accordingly */
 	reg |= 0x02;
 	SPI_SendData(SPI1, reg);
@@ -91,9 +92,49 @@ u8 max3421eRegRd(u8 reg)
 
 	/* Slave select hi. Should wait tcsw=300 ns before next transfer */
 	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
-
+			 
 	return rddata;
 }
+
+
+
+u8 max3421eReset(void)
+{
+	u16 tmp = 0;
+    max3421eRegWr( rUSBCTL, bmCHIPRES );                        //Chip reset. This stops the oscillator
+    max3421eRegWr( rUSBCTL, 0x00 );                             //Remove the reset
+
+    while(!(max3421eRegRd( rUSBIRQ ) & bmOSCOKIRQ )) {  //wait until the PLL is stable
+		vTaskDelay(10);
+        tmp++;                                          //timeout after 100ms
+        if( tmp == 10 ) {
+            return( false );
+        }
+    }
+    return( true );
+}
+
+
+void max3421ePowerOn(void)
+{
+	max3421eRegWr( rPINCTL,( bmFDUPSPI + bmINTLEVEL + bmGPXB ));	// Full-duplex SPI, level interrupt, GPX
+	if( max3421eReset() == false ) {                                // stop/start the oscillator
+        //Serial.println("Error: OSCOKIRQ failed to assert");
+		//vSerialPutString(uartHandle, "bella zio ", 10);
+		panic();
+    }
+
+    /* configure host operation */
+    max3421eRegWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
+    max3421eRegWr( rHIEN, bmCONDETIE|bmFRAMEIE );                       // connection detection
+    /* check if device is connected */
+    max3421eRegWr( rHCTL,bmSAMPLEBUS );                                 // sample USB bus
+    while(!(max3421eRegRd( rHCTL ) & bmSAMPLEBUS ));                    // wait for sample operation to finish
+    //busprobe();                                                       // check if anything is connected
+    max3421eRegWr( rHIRQ, bmCONDETIRQ );                                // clear connection detect interrupt                 
+    max3421eRegWr( rCPUCTL, 0x01 );                                     // enable interrupt pin	
+}
+
 
 
 
@@ -136,6 +177,6 @@ void pinInit(void)
 	/* Slave select high */
 	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
 
-	/* Also Reset line should be put high ? */
+	/* Also Reset line MUST be se high otherwise reset() wont work */
 }
 
