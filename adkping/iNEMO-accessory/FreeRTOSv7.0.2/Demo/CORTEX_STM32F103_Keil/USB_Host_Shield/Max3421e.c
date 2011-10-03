@@ -23,6 +23,7 @@
 #include "Max3421e.h"
 #include "Max3421e_constants.h"
 
+#include "inemoutil.h"
 
 static u8 vbusState;
 
@@ -121,10 +122,12 @@ void max3421ePowerOn(void)
 {
 	max3421eRegWr( rPINCTL,( bmFDUPSPI + bmINTLEVEL + bmGPXB ));	// Full-duplex SPI, level interrupt, GPX
 	if( max3421eReset() == false ) {                                // stop/start the oscillator
-        //Serial.println("Error: OSCOKIRQ failed to assert");
-		//vSerialPutString(uartHandle, "bella zio ", 10);
+        print("Error: OSCOKIRQ failed to assert\n\r");
 		panic();
-    }
+    }else{
+		print("MAX3421e reset [ok]\n\r");
+	}
+
 
     /* configure host operation */
     max3421eRegWr( rMODE, bmDPPULLDN|bmDMPULLDN|bmHOST|bmSEPIRQ );      // set pull-downs, Host, Separate GPIN IRQ on GPX
@@ -138,6 +141,24 @@ void max3421ePowerOn(void)
 }
 
 
+/* MAX3421 state change task and interrupt handler */
+u8 max3421eTask( void )
+{
+ 	u8 rcode = 0;
+ 	u8 pinvalue;
+    //Serial.print("Vbus state: ");
+    //Serial.println( vbusState, HEX );
+ 	pinvalue = readINT();
+ 	if( pinvalue  == Bit_RESET ) {
+        rcode = IntHandler();
+    }
+    pinvalue = readGPX();
+    if( pinvalue == Bit_RESET ) {
+        GpxHandler();
+    }
+//    usbSM();                                //USB state machine                            
+    return( rcode );   
+}
 
 
 /* Private methods
@@ -179,7 +200,9 @@ void pinInit(void)
 	/* Slave select high */
 	GPIO_WriteBit(GPIOC, GPIO_Pin_3, Bit_SET);
 
-	/* Also Reset line MUST be se high otherwise reset() wont work */
+	/* Also Reset line MUST be se high otherwise reset() wont work 
+	 * In our setup it is wired to 3.3V
+	 */
 }
 
 
@@ -219,4 +242,54 @@ void busprobe(void)
             break;
         }//end switch( bus_sample )
 }
+
+
+u8 getVbusState(void)
+{ 
+    return( vbusState );
+}
+
+
+u8 IntHandler(void)
+{
+ 	u8 HIRQ;
+ 	u8 HIRQ_sendback = 0x00;
+    HIRQ = max3421eRegRd( rHIRQ );                  //determine interrupt source
+    //if( HIRQ & bmFRAMEIRQ ) {               //->1ms SOF interrupt handler
+    //    HIRQ_sendback |= bmFRAMEIRQ;
+    //}//end FRAMEIRQ handling
+    if( HIRQ & bmCONDETIRQ ) {
+        busprobe();
+        HIRQ_sendback |= bmCONDETIRQ;
+    }
+    /* End HIRQ interrupts handling, clear serviced IRQs    */
+    max3421eRegWr( rHIRQ, HIRQ_sendback );
+    return( HIRQ_sendback );
+}
+
+
+u8 GpxHandler(void)
+{
+	u8 GPINIRQ = max3421eRegRd( rGPINIRQ );          //read GPIN IRQ register
+//    if( GPINIRQ & bmGPINIRQ7 ) {            //vbus overload
+//        vbusPwr( OFF );                     //attempt powercycle
+//        delay( 1000 );
+//        vbusPwr( ON );
+//        regWr( rGPINIRQ, bmGPINIRQ7 );
+//    }       
+    return( GPINIRQ );
+}
+
+
+u8 readINT(void)
+{
+	return (u8)GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_7);
+}
+
+u8 readGPX(void)
+{
+	// return GPX_PIN & _BV(GPX) ? HIGH : LOW;
+	return (u8)Bit_RESET;
+}
+
 

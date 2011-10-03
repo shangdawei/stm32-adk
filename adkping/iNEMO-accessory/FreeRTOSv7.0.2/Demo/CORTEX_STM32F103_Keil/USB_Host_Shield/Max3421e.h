@@ -1,13 +1,22 @@
+#define false (0)
+#define true  (~0)
+
+
 /* Public methods */
-void Max3421e(void); //contrstructor
+void max3421e(void); //constructor
 void max3421eRegWr(u8 reg, u8 val);
 u8 max3421eRegRd(u8 reg);
-
+void max3421ePowerOn(void);
+u8 max3421eReset(void);
+u8 max3421eTask(void);
 
 /* Prvivate methods (as from Max3421e.cpp Arduino code) */
 void spi_init(void);
 void pinInit(void);
-
-
-
-
+void busprobe(void);
+u8 getVbusState(void);
+u8 IntHandler(void);
+u8 GpxHandler(void);
+u8 GpxHandler(void);
+u8 readINT(void);
+u8 readGPX(void);

@@ -3,9 +3,6 @@
 
 #define BOARD_IS_INEMOV2  1
 
-/* Standard includes. */
-#include <stdio.h>
-
 /* Scheduler includes. */
 #include "FreeRTOS.h"
 #include "task.h"
@@ -23,6 +20,7 @@
 #include "Max3421e.h"
 #include "Max3421e_constants.h"
 
+#include "inemoutil.h"
 
 /*
  * Configure the clocks, GPIO and other peripherals as required by the demo.
@@ -30,18 +28,11 @@
 static void prvSetupHardware( void );
 
 xSemaphoreHandle xBinarySemaphore;
-xComPortHandle uartHandle;
 
 u8 revision1;
 u8 revision2;
 u8 mydata1;
 u8 mydata2;
-
-void panic(void)
-{
-	GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
-	for(;;);
-}
 
 
 void gpiosInit(void)
@@ -62,14 +53,14 @@ void gpiosInit(void)
 	gpioInit.GPIO_Speed = GPIO_Speed_2MHz;
 	GPIO_Init(GPIOB, &gpioInit);
 
-	/* Enable PC7 for output */
+	/* Enable PC7 for input */
 	GPIO_StructInit(&gpioInit);
 	gpioInit.GPIO_Pin = GPIO_Pin_7;
-	gpioInit.GPIO_Mode = GPIO_Mode_Out_PP;
+	gpioInit.GPIO_Mode = GPIO_Mode_AIN;
 	gpioInit.GPIO_Speed = GPIO_Speed_2MHz;
 	GPIO_Init(GPIOC, &gpioInit);
 
-	/* Enable PC3 for output */
+	/* Enable PC3 for output (Slave Select) */
 	GPIO_StructInit(&gpioInit);
 	gpioInit.GPIO_Pin = GPIO_Pin_3;
 	gpioInit.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -79,11 +70,13 @@ void gpiosInit(void)
 
 u8 testval;
 
+
 void spiTask(void* params)
 {
+	/* This NEEDS to be called in the context of a task, not from main otherwise
+	 * the UART will be functional only after a reset... TBI */
+	inemoUtilInit();
 
-	uartHandle = xSerialPortInitMinimal(115200, 32);
-	
 	/* constructor */
 	max3421e();
 
@@ -102,11 +95,11 @@ void spiTask(void* params)
 
 	while(1){	
 		/* LED activity */
-		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
-		vTaskDelay(200);
-		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_RESET);
-		vTaskDelay(200);
-		//vSerialPutString(uartHandle, "bella zio ", 10);
+		ledOn();
+		vTaskDelay(300);
+		ledOff();
+		vTaskDelay(300);
+		print("bellazia ");
 	}
 }
 
@@ -186,7 +179,7 @@ int main( void )
 	return 0;
 }
 
-
+	 
 static void prvSetupHardware( void )
 {
 	/* Start with the clocks in their expected state. */
