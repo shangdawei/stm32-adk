@@ -69,6 +69,13 @@ int print(char* string)
 }
 
 
+/* This mimics the Arduino millis() call */
+unsigned int millis(void)
+{
+	return xTaskGetTickCount()/portTICK_RATE_MS;
+}
+
+
 void panic(void)
 {
 	GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
