@@ -99,6 +99,25 @@ u8 max3421eRegRd(u8 reg)
 	return rddata;
 }
 
+char* max3421eBytesWr(u8 reg, u8 nbytes, char* data )
+{
+	while(nbytes--){
+		max3421eRegWr(reg, *data);
+		data++;
+	}
+    return( data );
+}
+
+
+char* max3421eBytesRd(u8 reg, u8 nbytes, char* data)
+{
+	while(nbytes--){
+		*data = max3421eRegRd(reg);
+		data++;
+	}
+
+	return data;
+}
 
 
 u8 max3421eReset(void)
