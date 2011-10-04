@@ -75,6 +75,11 @@ unsigned int millis(void)
 	return xTaskGetTickCount()/portTICK_RATE_MS;
 }
 
+void delay(int delay)
+{
+	vTaskDelay(delay);
+}
+
 
 void panic(void)
 {
