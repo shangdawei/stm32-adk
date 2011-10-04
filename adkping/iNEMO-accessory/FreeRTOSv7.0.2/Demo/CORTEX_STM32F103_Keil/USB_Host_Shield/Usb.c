@@ -460,3 +460,49 @@ void usbTask( void )      //USB state machine
     }// switch( usb_task_state
 }    
 
+
+//get device descriptor
+byte usbGetDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr) {
+    return( usbCtrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, 0x00, USB_DESCRIPTOR_DEVICE, 0x0000, nbytes, dataptr));
+}
+//get configuration descriptor  
+byte usbGetConfDescr( byte addr, byte ep, unsigned int nbytes, byte conf, char* dataptr) {
+        return( usbCtrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, conf, USB_DESCRIPTOR_CONFIGURATION, 0x0000, nbytes, dataptr ));
+}
+//get string descriptor
+byte usbGetStrDescr( byte addr, byte ep, unsigned int nbytes, byte index, unsigned int langid, char* dataptr) {
+    return( usbCtrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, index, USB_DESCRIPTOR_STRING, langid, nbytes, dataptr));
+}
+//set address 
+byte usbSetAddr( byte oldaddr, byte ep, byte newaddr) {
+    return( usbCtrlReq( oldaddr, ep, bmREQ_SET, USB_REQUEST_SET_ADDRESS, newaddr, 0x00, 0x0000, 0x0000, NULL));
+}
+//set configuration
+byte usbSetConf( byte addr, byte ep, byte conf_value) {
+    return( usbCtrlReq( addr, ep, bmREQ_SET, USB_REQUEST_SET_CONFIGURATION, conf_value, 0x00, 0x0000, 0x0000, NULL));         
+}
+//class requests
+byte usbSetProto( byte addr, byte ep, byte interface, byte protocol) {
+        return( usbCtrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_PROTOCOL, protocol, 0x00, interface, 0x0000, NULL));
+}
+byte usbGetProto( byte addr, byte ep, byte interface, char* dataptr) {
+        return( usbCtrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr));        
+}
+//get HID report descriptor 
+byte usbGetReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr) {
+        return( usbCtrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr));
+}
+byte usbSetReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr) {
+    return( usbCtrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr));
+}
+byte usbGetReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr) { // ** RI 04/11/09
+    return( usbCtrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, dataptr));
+}
+/* returns one byte of data in dataptr */
+byte usbGetIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr) {
+        return( usbCtrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_IDLE, reportID, 0, interface, 0x0001, dataptr));    
+}
+byte usbSetIdle( byte addr, byte ep, byte interface, byte reportID, byte duration) {
+           return( usbCtrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_IDLE, reportID, duration, interface, 0x0000, NULL));
+          }
+
