@@ -42,7 +42,8 @@ EP_RECORD dev0ep;           //Endpoint data structure used during enumeration fo
 
 void usbUSB () {
     usb_task_state = USB_DETACHED_SUBSTATE_INITIALIZE;  //set up state machine
-    usbInit(); 
+    usbInit();
+	print("USB stack initialized [ok]\r\n"); 
 }
 
 /* Initialize data structures */
@@ -100,6 +101,8 @@ byte usbCtrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo,
 	byte rcode;   
 	SETUP_PKT setup_pkt;
 
+	SETUP_PKT* address = & setup_pkt;
+
 	max3421eRegWr( rPERADDR, addr );                    //set peripheral address
 	if( bmReqType & 0x80 ) {
     	direction = true;                       //determine request direction
@@ -107,15 +110,15 @@ byte usbCtrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo,
     /* fill in setup packet */
     setup_pkt.ReqType_u.bmRequestType = bmReqType;
     setup_pkt.bRequest = bRequest;
-    setup_pkt.wVal_u.wValueLo = wValLo;	 //CFR strange stuff in .h definition
-    setup_pkt.wVal_u.wValueHi = wValHi;
+    setup_pkt.wVal_u.dummy.wValueLo = wValLo;	 //CFR strange stuff in .h definition
+    setup_pkt.wVal_u.dummy.wValueHi = wValHi;
     setup_pkt.wIndex = wInd;
     setup_pkt.wLength = nbytes;
 	max3421eBytesWr( rSUDFIFO, 8, ( char *)&setup_pkt );    //transfer to setup packet FIFO
     rcode = usbDispatchPkt( tokSETUP, ep);            //dispatch packet
-    print("Setup packet\n");   //DEBUG
+    print("Setup packet\r\n");   //DEBUG
     if( rcode ) {                                   //return HRSLT if not zero
-        print("Setup packet error: \n");
+        print("Setup packet error: \r\n");
         //print( rcode, HEX );                                          
         return( rcode );
     }
@@ -124,7 +127,7 @@ byte usbCtrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo,
         rcode = usbCtrlData( addr, ep, nbytes, dataptr, direction );
     }
     if( rcode ) {   //return error
-        print("Data packet error: \n");
+        print("Data packet error: \r\n");
         //Serial.print( rcode, HEX );                                          
         return( rcode );
     }

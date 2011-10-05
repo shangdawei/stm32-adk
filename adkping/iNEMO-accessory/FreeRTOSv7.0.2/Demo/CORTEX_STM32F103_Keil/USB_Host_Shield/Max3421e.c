@@ -141,10 +141,10 @@ void max3421ePowerOn(void)
 {
 	max3421eRegWr( rPINCTL,( bmFDUPSPI + bmINTLEVEL + bmGPXB ));	// Full-duplex SPI, level interrupt, GPX
 	if( max3421eReset() == false ) {                                // stop/start the oscillator
-        print("Error: OSCOKIRQ failed to assert\n\r");
+        print("Error: OSCOKIRQ failed to assert\r\n");
 		panic();
     }else{
-		print("MAX3421e reset [ok]\n\r");
+		print("MAX3421e reset [ok]\r\n");
 	}
 
 
@@ -156,7 +156,9 @@ void max3421ePowerOn(void)
     while(!(max3421eRegRd( rHCTL ) & bmSAMPLEBUS ));                    // wait for sample operation to finish
     busprobe();                                                       // check if anything is connected
     max3421eRegWr( rHIRQ, bmCONDETIRQ );                                // clear connection detect interrupt                 
-    max3421eRegWr( rCPUCTL, 0x01 );                                     // enable interrupt pin	
+    max3421eRegWr( rCPUCTL, 0x01 );                                     // enable interrupt pin
+	
+	print("MAX3421e powered on [ok]\r\n");	
 }
 
 

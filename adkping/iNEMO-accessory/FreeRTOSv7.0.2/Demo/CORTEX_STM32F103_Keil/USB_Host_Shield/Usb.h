@@ -83,22 +83,22 @@
 typedef struct {
     union {                          // offset   description
         byte bmRequestType;         //   0      Bit-map of request type
-        //struct {
+        struct {
             byte    recipient:  5;  //          Recipient of the request
             byte    type:       2;  //          Type of request
             byte    direction:  1;  //          Direction of data X-fer
-        //}dummy;			  //SPURGO: why are these members wrapped in an unnamed struct ?? for packing it ?
+        }dummy;			  //SPURGO: why are these members wrapped in an unnamed struct ?? for packing it ?
     }ReqType_u;
     byte    bRequest;               //   1      Request
     union {
-        unsigned int    wValue;             //   2      Depends on bRequest
-        //struct {			   //SPURGO: why are these members wrapped in an unnamed struct ?? for packing it ?
+        u16    wValue;             //   2      Depends on bRequest
+        struct {			   //SPURGO: why are these members wrapped in an unnamed struct ?? for packing it ?
         byte    wValueLo;
         byte    wValueHi;
-        //};
+        }dummy;
     }wVal_u;
-    unsigned int    wIndex;                 //   4      Depends on bRequest
-    unsigned int    wLength;                //   6      Depends on bRequest
+    u16    wIndex;                 //   4      Depends on bRequest
+    u16    wLength;                //   6      Depends on bRequest
 } SETUP_PKT, *PSETUP_PKT;
 
 /* Endpoint information structure               */
@@ -107,7 +107,7 @@ typedef struct {
 typedef struct {        
     byte epAddr;        //copy from endpoint descriptor. Bit 7 indicates direction ( ignored for control endpoints )
     byte Attr;          // Endpoint transfer type.
-    unsigned int MaxPktSize;    // Maximum packet size.
+    u16  MaxPktSize;    // Maximum packet size.
     byte Interval;      // Polling interval in frames.
     byte sndToggle;     //last toggle value, bitmask for HCTL toggle bits
     byte rcvToggle;     //last toggle value, bitmask for HCTL toggle bits
