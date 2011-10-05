@@ -17,6 +17,8 @@
 #include "stm32f10x_exti.h"
 #include "stm32f10x_spi.h"
 
+#include <AndroidAccessory.h>
+
 #include "Max3421e.h"
 #include "Max3421e_constants.h"
 
@@ -27,12 +29,13 @@
  */
 static void prvSetupHardware( void );
 
-xSemaphoreHandle xBinarySemaphore;
-
 u8 revision1;
 u8 revision2;
 u8 mydata1;
 u8 mydata2;
+
+char sendBuffer[]="ArduinoAccessory!";
+char receiveBuffer[128];
 
 
 void gpiosInit(void)
@@ -68,11 +71,61 @@ void gpiosInit(void)
 	GPIO_Init(GPIOC, &gpioInit);
 }
 
-u8 testval;
+int testval;
 
+int timeout1, timeout2;
+
+
+void mainPhase()
+{
+	int len;
+  	while(1){    
+        len = androidAccessoryWrite(sendBuffer, 17);
+        print("\r\nSent accessory name... Total chars sent:");
+        //Serial.print(len);
+        print("\r\nReceived from accessory: ");
+        len = androidAccessoryRead(receiveBuffer, sizeof(receiveBuffer), 1);
+        //Serial.print(receiveBuffer);
+        print(" Total chars received: \r\n");
+        //Serial.print(len);
+        delay(1000);
+  }      
+}
+
+void accessoryTask(void* params)
+{
+	/* Initialize iNEMO utility library */
+ 	inemoUtilInit();
+
+	/* Construct accessory */
+	AndroidAccessory("STMicroelectronics", "adkping", "Just pings data", "2.0",
+                        "http://www.st.com", "1234567890123456");
+
+	/* Power on accessory */
+	androidAccessoryPowerOn();
+
+	delay(200);
+
+	/* Main loop */
+	while(1){
+		if (androidAccessoryIsConnected()) {
+        	print("Inside acc.isconnected..\r\n");
+            mainPhase();
+            print("Exited from mainphase...\r\n");
+    	}
+
+    	print("Test loop...\r\n");
+		delay(400);
+		ledOn();
+		delay(400);
+		ledOff();
+	}
+}
 
 void spiTask(void* params)
 {
+
+
 	/* This NEEDS to be called in the context of a task, not from main otherwise
 	 * the UART will be functional only after a reset... TBI */
 	inemoUtilInit();
@@ -93,12 +146,16 @@ void spiTask(void* params)
 	max3421eRegWr(20<<3, 0xb);
 	testval = max3421eRegRd(20<<3);
 
+
 	while(1){	
 		/* LED activity */
 		ledOn();
+		timeout1 = millis();
 		vTaskDelay(300);
 		ledOff();
 		vTaskDelay(300);
+		timeout2 = millis() + 1000;
+		while(millis() <= timeout2);
 		print("bellazia ");
 	}
 }
@@ -165,7 +222,7 @@ int main( void )
 
 	//vSetupTimerTest();
 
-  	err = xTaskCreate(spiTask, (signed portCHAR*) "SPI", 256, NULL, tskIDLE_PRIORITY + 1, NULL );
+  	err = xTaskCreate(accessoryTask, (signed portCHAR*) "ADK", 512, NULL, tskIDLE_PRIORITY + 1, NULL );
   	if(err != pdPASS)
   		panic();
 
