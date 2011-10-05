@@ -35,7 +35,7 @@ void ledOff(void)
 
 int inemoUtilInit(void)
 {
-	uartHandle = xSerialPortInitMinimal(115200, 64);
+	uartHandle = xSerialPortInitMinimal(115200, 256);
 	if(uartHandle != NULL){
 		print("UART initialized succesfully\n\r");
 		return 0;
