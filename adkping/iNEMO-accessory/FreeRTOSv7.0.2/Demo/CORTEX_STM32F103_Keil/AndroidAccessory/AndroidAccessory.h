@@ -17,6 +17,7 @@
 #ifndef __AndroidAccessory_h__
 #define __AndroidAccessory_h__
 
+#include <Usb.h>
 
 #define bool u8
 #define byte u8
@@ -39,10 +40,7 @@ struct AndroidAccessory{
     u8 descBuff[256];
 };
 
-byte androidAccessoryIsAccessoryDevice(USB_DEVICE_DESCRIPTOR *desc)
-{
-	return desc->idVendor == 0x18d1 && (desc->idProduct == 0x2D00 || desc->idProduct == 0x2D01);
-}
+byte androidAccessoryIsAccessoryDevice(USB_DEVICE_DESCRIPTOR *desc);
 
 int androidAccessoryGetProtocol(byte addr);
 void androidAccessorySendString(byte addr, int index, const char *str);
@@ -62,7 +60,7 @@ void androidAccessoryPowerOn(void);
 
 bool androidAccessoryIsConnected(void);
 int androidAccessoryRead(void *buff, int len, unsigned int nakLimit);
-int androidAccessoryRrite(void *buff, int len);
+int androidAccessoryWrite(void *buff, int len);
 
 
 #endif /* __AndroidAccessory_h__ */

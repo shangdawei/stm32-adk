@@ -55,7 +55,18 @@ void AndroidAccessory(const char *manufacturer,
 	androidAccessory.version = version;
 	androidAccessory.uri = uri;
 	androidAccessory.serial = serial;
+
+	/* Also construct max3421e chip and USB stack */
+	max3421e();
+	usbUSB();
+	print("Android Accessory contructed [ok]\r\n");
 }								   
+
+
+byte androidAccessoryIsAccessoryDevice(USB_DEVICE_DESCRIPTOR *desc)
+{
+	return desc->idVendor == 0x18d1 && (desc->idProduct == 0x2D00 || desc->idProduct == 0x2D01);
+}
 
 
 void androidAccessoryPowerOn(void)
@@ -97,9 +108,9 @@ bool androidAccessorySwitchDevice(byte addr)
     int protocol = androidAccessoryGetProtocol(addr);
 
     if (protocol == 1) {
-        print("device supports protcol 1\n");
+        print("device supports protcol 1\r\n");
     } else {
-        print("could not read device protocol version\n");
+        print("could not read device protocol version\r\n");
         return false;
     }
 
@@ -137,21 +148,21 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
 
     err = usbGetConfDescr(addr, 0, 4, 0, (char *)descBuff);
     if (err) {
-        print("Can't get config descriptor length\n");
+        print("Can't get config descriptor length\r\n");
         return false;
     }
 
 
     len = descBuff[2] | ((int)descBuff[3] << 8);
     if (len > sizeof(descBuff)) {
-        print("config descriptor too large\n");
+        print("config descriptor too large\r\n");
             /* might want to truncate here */
         return false;
     }
 
     err = usbGetConfDescr(addr, 0, len, 0, (char *)descBuff);
     if (err) {
-        print("Can't get config descriptor\n");
+        print("Can't get config descriptor\r\n");
         return false;
     }
 
@@ -166,11 +177,11 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
 
         switch (descType) {
         case USB_DESCRIPTOR_CONFIGURATION:
-            print("config desc\n");
+            print("config desc\r\n");
             break;
 
         case USB_DESCRIPTOR_INTERFACE:
-            print("interface desc\n");
+            print("interface desc\r\n");
             break;
 
         case USB_DESCRIPTOR_ENDPOINT:
@@ -192,7 +203,7 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
             break;
 
         default:
-            print("unkown desc type ");
+            print("unkown desc type \r\n");
             //println( descType, HEX);
             break;
         }
@@ -201,7 +212,7 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
     }
 
     if (!(inEp->epAddr && outEp->epAddr))
-        print("can't find accessory endpoints\n");
+        print("can't find accessory endpoints\r\n");
 
     return inEp->epAddr && outEp->epAddr;
 }
@@ -232,7 +243,7 @@ bool androidAccessoryConfigureAndroid(void)
 
     err = usbSetConf( 1, 0, 1 );
     if (err) {
-        print("Can't set config to 1\n");
+        print("Can't set config to 1\r\n");
         return false;
     }
 
@@ -254,26 +265,26 @@ bool androidAccessoryIsConnected(void)
     if (!androidAccessory.connected &&
         usbGetUsbTaskState() >= USB_STATE_CONFIGURING &&
         usbGetUsbTaskState() != USB_STATE_RUNNING) {
-        print("\nDevice addressed... ");
-        print("Requesting device descriptor.\n");
+        print("nDevice addressed... \r\n");
+        print("Requesting device descriptor.\r\n");
 
         err = usbGetDevDescr(1, 0, 0x12, (char *) devDesc);
         if (err) {
-            print("\nDevice descriptor cannot be retrieved. Trying again\n");
+            print("Device descriptor cannot be retrieved. Trying again\r\n");
             return false;
         }
 
         if (androidAccessoryIsAccessoryDevice(devDesc)) {
-            print("found android acessory device\n");
+            print("found android acessory device\r\n");
 
             androidAccessory.connected = androidAccessoryConfigureAndroid();
         } else {
-            print("found possible device. swithcing to serial mode\n");
+            print("found possible device. swithcing to serial mode\r\n");
             androidAccessorySwitchDevice(1);
         }
     } else if (usbGetUsbTaskState() == USB_DETACHED_SUBSTATE_WAIT_FOR_DEVICE) {
         if (androidAccessory.connected)
-            print("disconnect\n");
+            print("disconnect\r\n");
         androidAccessory.connected = false;
     }
 
