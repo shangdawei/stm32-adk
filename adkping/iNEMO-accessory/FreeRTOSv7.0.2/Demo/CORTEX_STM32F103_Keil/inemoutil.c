@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "inemoutil.h"
 
 /* Scheduler includes. */
@@ -40,17 +42,6 @@ int inemoUtilInit(void)
 	}
 
 	return -1;
-}
-
-
-int strlen(char* string)
-{
-	int len = 0;
-
-	while(string[len] != 0){
-		len++;
-	}
-	return len;
 }
 
 
