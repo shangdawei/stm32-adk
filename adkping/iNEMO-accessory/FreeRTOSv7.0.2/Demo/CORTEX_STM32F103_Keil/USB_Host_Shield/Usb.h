@@ -84,9 +84,10 @@ typedef struct {
     union {                          // offset   description
         byte bmRequestType;         //   0      Bit-map of request type
         struct {
-            byte    recipient:  5;  //          Recipient of the request
-            byte    type:       2;  //          Type of request
-            byte    direction:  1;  //          Direction of data X-fer
+            //byte    recipient:  5;  //          Recipient of the request
+            //byte    type:       2;  //          Type of request
+            //byte    direction:  1;  //          Direction of data X-fer
+			byte stuff;
         }dummy;			  //SPURGO: why are these members wrapped in an unnamed struct ?? for packing it ?
     }ReqType_u;
     byte    bRequest;               //   1      Request
@@ -136,27 +137,27 @@ byte usbGetUsbTaskState( void );
 void usbSetUsbTaskState( byte state );
 EP_RECORD* usbGetDevTableEntry( byte addr, byte ep );
 void usbSetDevTableEntry( byte addr, EP_RECORD* eprecord_ptr );
-byte usbCtrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr);
+byte usbCtrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, u16 wInd, u16 nbytes, char* dataptr);
 /* Control requests */
-byte usbGetDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr);
-byte usbGetConfDescr( byte addr, byte ep, unsigned int nbytes, byte conf, char* dataptr);
-byte usbGetStrDescr( byte addr, byte ep, unsigned int nbytes, byte index, unsigned int langid, char* dataptr);
+byte usbGetDevDescr( byte addr, byte ep, u16 nbytes, char* dataptr);
+byte usbGetConfDescr( byte addr, byte ep, u16 nbytes, byte conf, char* dataptr);
+byte usbGetStrDescr( byte addr, byte ep, u16 nbytes, byte index, u16 langid, char* dataptr);
 byte usbSetAddr( byte oldaddr, byte ep, byte newaddr);
 byte usbSetConf( byte addr, byte ep, byte conf_value);
         /**/
 byte usbSetProto( byte addr, byte ep, byte interface, byte protocol);
 byte usbGetProto( byte addr, byte ep, byte interface, char* dataptr);
-byte usbGetReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr);
-byte usbSetReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr);
-byte usbGetReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr);
+byte usbGetReportDescr( byte addr, byte ep, u16 nbytes, char* dataptr);
+byte usbSetReport( byte addr, byte ep, u16 nbytes, byte interface, byte report_type, byte report_id, char* dataptr);
+byte usbGetReport( byte addr, byte ep, u16 nbytes, byte interface, byte report_type, byte report_id, char* dataptr);
 byte usbGetIdle( byte addr, byte ep, byte interface, byte reportID, char* dataptr);
 byte usbSetIdle( byte addr, byte ep, byte interface, byte reportID, byte duration);
         /**/
-byte usbCtrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction);
+byte usbCtrlData( byte addr, byte ep, u16 nbytes, char* dataptr, boolean direction);
 byte usbCtrlStatus( byte ep, boolean direction);
-byte usbInTransfer( byte addr, byte ep, unsigned int nbytes, char* data);
-int usbNewInTransfer( byte addr, byte ep, unsigned int nbytes, char* data);
-byte usbOutTransfer( byte addr, byte ep, unsigned int nbytes, char* data);
+byte usbInTransfer( byte addr, byte ep, u16 nbytes, char* data);
+int usbNewInTransfer( byte addr, byte ep, u16 nbytes, char* data);
+byte usbOutTransfer( byte addr, byte ep, u16 nbytes, char* data);
 byte usbDispatchPkt( byte token, byte ep);
 void usbTask( void );
 

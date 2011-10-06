@@ -95,13 +95,14 @@ void usbSetDevTableEntry( byte addr, EP_RECORD* eprecord_ptr )
 /* return codes:                */
 /* 00       =   success         */
 /* 01-0f    =   non-zero HRSLT  */
-byte usbCtrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr)
+byte usbCtrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, u16 wInd, u16 nbytes, char* dataptr)
 {
 	boolean direction = false;     //request direction, IN or OUT
 	byte rcode;   
 	SETUP_PKT setup_pkt;
 
 	SETUP_PKT* address = & setup_pkt;
+	memset(address, 0, sizeof(SETUP_PKT));
 
 	max3421eRegWr( rPERADDR, addr );                    //set peripheral address
 	if( bmReqType & 0x80 ) {
@@ -152,7 +153,7 @@ byte usbCtrlStatus( byte ep, boolean direction)
 
 
 /* Control transfer with data stage. Stages 2 and 3 of control transfer. Assumes preipheral address is set and setup packet has been sent */
-byte usbCtrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction)
+byte usbCtrlData( byte addr, byte ep, u16 nbytes, char* dataptr, boolean direction)
 {
  byte rcode;
   if( direction ) {                      //IN transfer
@@ -170,12 +171,12 @@ byte usbCtrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolea
 /* Keep sending INs and writes data to memory area pointed by 'data'                                                           */
 /* rcode 0 if no errors. rcode 01-0f is relayed from dispatchPkt(). Rcode f0 means RCVDAVIRQ error,
             fe USB xfer timeout */
-byte usbInTransfer( byte addr, byte ep, unsigned int nbytes, char* data)
+byte usbInTransfer( byte addr, byte ep, u16 nbytes, char* data)
 {
  byte rcode;
  byte pktsize;
  byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
- unsigned int xfrlen = 0;
+ u16 xfrlen = 0;
     max3421eRegWr( rHCTL, devtable[ addr ].epinfo[ ep ].rcvToggle );    //set toggle value
     while( 1 ) { // use a 'return' to exit this loop
         rcode = usbDispatchPkt( tokIN, ep);           //IN packet to EP-'endpoint'. Function takes care of NAKS.
@@ -207,12 +208,12 @@ byte usbInTransfer( byte addr, byte ep, unsigned int nbytes, char* data)
 }
 
 
-int usbNewInTransfer( byte addr, byte ep, unsigned int nbytes, char* data)
+int usbNewInTransfer( byte addr, byte ep, u16 nbytes, char* data)
 {
  byte rcode;
  byte pktsize;
  byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
- unsigned int xfrlen = 0;
+ u16 xfrlen = 0;
     max3421eRegWr( rHCTL, devtable[ addr ].epinfo[ ep ].rcvToggle );    //set toggle value
     while( 1 ) { // use a 'return' to exit this loop
         rcode = usbDispatchPkt( tokIN, ep);           //IN packet to EP-'endpoint'. Function takes care of NAKS.
@@ -248,12 +249,12 @@ int usbNewInTransfer( byte addr, byte ep, unsigned int nbytes, char* data)
 /* Handles NAK bug per Maxim Application Note 4000 for single buffer transfer   */
 /* rcode 0 if no errors. rcode 01-0f is relayed from HRSL                       */
 /* major part of this function borrowed from code shared by Richard Ibbotson    */
-byte usbOutTransfer( byte addr, byte ep, unsigned int nbytes, char* data)
+byte usbOutTransfer( byte addr, byte ep, u16 nbytes, char* data)
 {
  byte rcode, retry_count;
  char* data_p = data;   //local copy of the data pointer
- unsigned int bytes_tosend, nak_count;
- unsigned int bytes_left = nbytes;
+ u16 bytes_tosend, nak_count;
+ u16 bytes_left = nbytes;
  byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
  unsigned long timeout = millis() + USB_XFER_TIMEOUT;
  
@@ -316,7 +317,7 @@ byte usbDispatchPkt( byte token, byte ep)
  unsigned long timeout = millis() + USB_XFER_TIMEOUT;
  byte tmpdata;   
  byte rcode;
- unsigned int nak_count = 0;
+ u16 nak_count = 0;
  char retry_count = 0;
 
   while( timeout > millis() ) {
@@ -465,15 +466,15 @@ void usbTask( void )      //USB state machine
 
 
 //get device descriptor
-byte usbGetDevDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr) {
+byte usbGetDevDescr( byte addr, byte ep, u16 nbytes, char* dataptr) {
     return( usbCtrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, 0x00, USB_DESCRIPTOR_DEVICE, 0x0000, nbytes, dataptr));
 }
 //get configuration descriptor  
-byte usbGetConfDescr( byte addr, byte ep, unsigned int nbytes, byte conf, char* dataptr) {
+byte usbGetConfDescr( byte addr, byte ep, u16 nbytes, byte conf, char* dataptr) {
         return( usbCtrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, conf, USB_DESCRIPTOR_CONFIGURATION, 0x0000, nbytes, dataptr ));
 }
 //get string descriptor
-byte usbGetStrDescr( byte addr, byte ep, unsigned int nbytes, byte index, unsigned int langid, char* dataptr) {
+byte usbGetStrDescr( byte addr, byte ep, u16 nbytes, byte index, u16 langid, char* dataptr) {
     return( usbCtrlReq( addr, ep, bmREQ_GET_DESCR, USB_REQUEST_GET_DESCRIPTOR, index, USB_DESCRIPTOR_STRING, langid, nbytes, dataptr));
 }
 //set address 
@@ -492,13 +493,13 @@ byte usbGetProto( byte addr, byte ep, byte interface, char* dataptr) {
         return( usbCtrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_PROTOCOL, 0x00, 0x00, interface, 0x0001, dataptr));        
 }
 //get HID report descriptor 
-byte usbGetReportDescr( byte addr, byte ep, unsigned int nbytes, char* dataptr) {
+byte usbGetReportDescr( byte addr, byte ep, u16 nbytes, char* dataptr) {
         return( usbCtrlReq( addr, ep, bmREQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, HID_DESCRIPTOR_REPORT, 0x0000, nbytes, dataptr));
 }
-byte usbSetReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr) {
+byte usbSetReport( byte addr, byte ep, u16 nbytes, byte interface, byte report_type, byte report_id, char* dataptr) {
     return( usbCtrlReq( addr, ep, bmREQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, interface, nbytes, dataptr));
 }
-byte usbGetReport( byte addr, byte ep, unsigned int nbytes, byte interface, byte report_type, byte report_id, char* dataptr) { // ** RI 04/11/09
+byte usbGetReport( byte addr, byte ep, u16 nbytes, byte interface, byte report_type, byte report_id, char* dataptr) { // ** RI 04/11/09
     return( usbCtrlReq( addr, ep, bmREQ_HIDIN, HID_REQUEST_GET_REPORT, report_id, report_type, interface, nbytes, dataptr));
 }
 /* returns one byte of data in dataptr */
