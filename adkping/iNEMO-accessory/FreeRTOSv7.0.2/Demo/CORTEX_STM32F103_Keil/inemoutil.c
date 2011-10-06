@@ -59,6 +59,25 @@ int print(char* string)
 	}
 }
 
+void printHex(unsigned int val)
+{
+	char string[5];
+	u8 i;
+	unsigned int rem;
+
+	for(i=0; i<4;i++){
+		rem = val % 16;
+		if(rem >= 10)
+			string[3-i] = 'A' + rem - 10;
+		else
+			string[3-i] = '0' + rem;
+		val /= 16;
+	}
+	
+	string[4] = 0;
+	print(string);
+}
+
 
 /* This mimics the Arduino millis() call */
 unsigned int millis(void)
