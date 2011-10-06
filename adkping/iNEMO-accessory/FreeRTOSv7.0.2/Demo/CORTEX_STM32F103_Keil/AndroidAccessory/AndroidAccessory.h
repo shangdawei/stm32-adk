@@ -42,7 +42,7 @@ struct AndroidAccessory{
 
 byte androidAccessoryIsAccessoryDevice(USB_DEVICE_DESCRIPTOR *desc);
 
-int androidAccessoryGetProtocol(byte addr);
+s16 androidAccessoryGetProtocol(byte addr);
 void androidAccessorySendString(byte addr, int index, const char *str);
 bool androidAccessorySwitchDevice(byte addr);
 bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp);

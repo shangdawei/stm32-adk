@@ -78,9 +78,9 @@ void androidAccessoryPowerOn(void)
 
 
 
-int androidAccessoryGetProtocol(byte addr)
+s16 androidAccessoryGetProtocol(byte addr)
 {
-    int protocol = -1;
+    s16 protocol = 0xaaaa;
     usbCtrlReq(addr, 0,
                 USB_SETUP_DEVICE_TO_HOST |
                 USB_SETUP_TYPE_VENDOR |
@@ -140,36 +140,34 @@ bool androidAccessorySwitchDevice(byte addr)
 // Finds the first bulk IN and bulk OUT endpoints
 bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
 {
-    int len;
+    u16 len;
     byte err;
     u8 *p;
 
-	u8* descBuff = androidAccessory.descBuff;
-
-    err = usbGetConfDescr(addr, 0, 4, 0, (char *)descBuff);
+    err = usbGetConfDescr(addr, 0, 4, 0, (char *)androidAccessory.descBuff);
     if (err) {
         print("Can't get config descriptor length\r\n");
         return false;
     }
 
 
-    len = descBuff[2] | ((int)descBuff[3] << 8);
-    if (len > sizeof(descBuff)) {
+    len = androidAccessory.descBuff[2] | ((u16)androidAccessory.descBuff[3] << 8);//SPURGO ?
+    if (len > sizeof(androidAccessory.descBuff)) {
         print("config descriptor too large\r\n");
             /* might want to truncate here */
         return false;
     }
 
-    err = usbGetConfDescr(addr, 0, len, 0, (char *)descBuff);
+    err = usbGetConfDescr(addr, 0, len, 0, (char *)androidAccessory.descBuff);
     if (err) {
         print("Can't get config descriptor\r\n");
         return false;
     }
 
-    p = descBuff;
+    p = androidAccessory.descBuff;
     inEp->epAddr = 0;
     outEp->epAddr = 0;
-    while (p < (descBuff + len)){
+    while (p < (androidAccessory.descBuff + len)){
         u8 descLen = p[0];
         u8 descType = p[1];
         USB_ENDPOINT_DESCRIPTOR *epDesc;
@@ -213,6 +211,12 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
 
     if (!(inEp->epAddr && outEp->epAddr))
         print("can't find accessory endpoints\r\n");
+
+	print("Found end points: ");
+	printHex(inEp->epAddr);
+	print("  ");
+	printHex(outEp->epAddr);
+	print("\n\r");	
 
     return inEp->epAddr && outEp->epAddr;
 }
