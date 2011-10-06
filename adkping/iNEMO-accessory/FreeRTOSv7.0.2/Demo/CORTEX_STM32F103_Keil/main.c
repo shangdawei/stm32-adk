@@ -81,11 +81,12 @@ void mainPhase()
 	int len;
   	while(1){    
         len = androidAccessoryWrite(sendBuffer, 17);
-        print("\r\nSent accessory name... Total chars sent:");
-        //Serial.print(len);
-        print("\r\nReceived from accessory: ");
+        print("Sent accessory name... Total chars sent: ");
+        printHex(len);
+		print("\n");
+        print("Received from accessory: ");
         len = androidAccessoryRead(receiveBuffer, sizeof(receiveBuffer), 1);
-        //Serial.print(receiveBuffer);
+        print(receiveBuffer);
         print(" Total chars received: \r\n");
         //Serial.print(len);
         delay(1000);
@@ -115,20 +116,29 @@ void accessoryTask(void* params)
     	}
 
     	print("Test loop...\r\n");
-		delay(400);
+		delay(200);
 		ledOn();
-		delay(400);
+		delay(200);
 		ledOff();
 	}
 }
 
 void spiTask(void* params)
 {
-
+	unsigned int val = 0;
 
 	/* This NEEDS to be called in the context of a task, not from main otherwise
 	 * the UART will be functional only after a reset... TBI */
 	inemoUtilInit();
+
+
+	while(1){
+
+		print("Printing some stuff\r\n");
+		printHex(val++);
+		delay(100);
+	}
+
 
 	/* constructor */
 	max3421e();
