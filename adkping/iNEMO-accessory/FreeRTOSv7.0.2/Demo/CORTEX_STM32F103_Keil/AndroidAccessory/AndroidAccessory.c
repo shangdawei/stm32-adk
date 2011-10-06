@@ -151,7 +151,7 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
     }
 
 
-    len = androidAccessory.descBuff[2] | ((u16)androidAccessory.descBuff[3] << 8);//SPURGO ?
+    len = androidAccessory.descBuff[2] | ((u16)androidAccessory.descBuff[3] << 8);
     if (len > sizeof(androidAccessory.descBuff)) {
         print("config descriptor too large\r\n");
             /* might want to truncate here */
@@ -212,12 +212,6 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
     if (!(inEp->epAddr && outEp->epAddr))
         print("can't find accessory endpoints\r\n");
 
-	print("Found end points: ");
-	printHex(inEp->epAddr);
-	print("  ");
-	printHex(outEp->epAddr);
-	print("\n\r");	
-
     return inEp->epAddr && outEp->epAddr;
 }
 
@@ -239,8 +233,11 @@ bool androidAccessoryConfigureAndroid(void)
     androidAccessory.in = inEp.epAddr;
     androidAccessory.out = outEp.epAddr;
 
-    //println(inEp.epAddr, HEX);
-    //println(outEp.epAddr, HEX);
+	print("End points: ");
+    printHex(inEp.epAddr);
+	print("  ");
+    printHex(outEp.epAddr);
+	print("\r\n");
 
     androidAccessory.epRecord[0] = *(usbGetDevTableEntry(0,0));
     usbSetDevTableEntry(1, androidAccessory.epRecord);

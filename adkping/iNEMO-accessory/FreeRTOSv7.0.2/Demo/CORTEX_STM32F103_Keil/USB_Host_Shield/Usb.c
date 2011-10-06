@@ -29,6 +29,8 @@
 
 /* USB functions */
 
+#include <string.h>
+
 #include "Usb.h"
 #include "inemoutil.h"
 

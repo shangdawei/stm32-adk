@@ -84,16 +84,15 @@ typedef struct {
     union {                          // offset   description
         byte bmRequestType;         //   0      Bit-map of request type
         struct {
-            //byte    recipient:  5;  //          Recipient of the request
-            //byte    type:       2;  //          Type of request
-            //byte    direction:  1;  //          Direction of data X-fer
-			byte stuff;
-        }dummy;			  //SPURGO: why are these members wrapped in an unnamed struct ?? for packing it ?
+            byte    recipient:  5;  //          Recipient of the request
+            byte    type:       2;  //          Type of request
+            byte    direction:  1;  //          Direction of data X-fer
+        }dummy;
     }ReqType_u;
     byte    bRequest;               //   1      Request
     union {
         u16    wValue;             //   2      Depends on bRequest
-        struct {			   //SPURGO: why are these members wrapped in an unnamed struct ?? for packing it ?
+        struct {
         byte    wValueLo;
         byte    wValueHi;
         }dummy;

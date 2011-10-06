@@ -83,12 +83,14 @@ void mainPhase()
         len = androidAccessoryWrite(sendBuffer, 17);
         print("Sent accessory name... Total chars sent: ");
         printHex(len);
-		print("\n");
+		print("\r\n");
         print("Received from accessory: ");
         len = androidAccessoryRead(receiveBuffer, sizeof(receiveBuffer), 1);
         print(receiveBuffer);
-        print(" Total chars received: \r\n");
-        //Serial.print(len);
+        print("\r\n");
+		print(" Total chars received: ");
+        printHex(len);
+		print("\r\n");
         delay(1000);
   }      
 }
