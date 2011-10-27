@@ -118,9 +118,9 @@ void accessoryTask(void* params)
     	}
 
     	print("Test loop...\r\n");
-		delay(200);
+		delay(20);
 		ledOn();
-		delay(200);
+		delay(20);
 		ledOff();
 	}
 }
