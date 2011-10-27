@@ -1,5 +1,6 @@
-/**	inemo utility functions
-  */
+/**	iNEMO utility functions
+ */
+
 
 int inemoUtilInit(void);
 void ledOn(void);
