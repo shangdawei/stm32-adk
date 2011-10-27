@@ -29,10 +29,6 @@
  */
 static void prvSetupHardware( void );
 
-u8 revision1;
-u8 revision2;
-u8 mydata1;
-u8 mydata2;
 
 char sendBuffer[]="ArduinoAccessory!";
 char receiveBuffer[128];
@@ -70,10 +66,6 @@ void gpiosInit(void)
 	gpioInit.GPIO_Speed = GPIO_Speed_2MHz;
 	GPIO_Init(GPIOC, &gpioInit);
 }
-
-int testval;
-
-int timeout1, timeout2;
 
 
 void mainPhase()
@@ -122,53 +114,6 @@ void accessoryTask(void* params)
 		ledOn();
 		delay(20);
 		ledOff();
-	}
-}
-
-void spiTask(void* params)
-{
-	unsigned int val = 0;
-
-	/* This NEEDS to be called in the context of a task, not from main otherwise
-	 * the UART will be functional only after a reset... TBI */
-	inemoUtilInit();
-
-
-	while(1){
-
-		print("Printing some stuff\r\n");
-		printHex(val++);
-		delay(100);
-	}
-
-
-	/* constructor */
-	max3421e();
-
-	/* Power on */
-	max3421ePowerOn();
-
-
-	/* Read revision: 0x90(TX), 0x12 (or 0x48) (RX) */
-	revision1 = max3421eRegRd(rREVISION);
-	revision2 = max3421eRegRd(rREVISION);
-	mydata1 = max3421eRegRd(rPINCTL);
-	mydata2 = max3421eRegRd(rPINCTL);
-
-	max3421eRegWr(20<<3, 0xb);
-	testval = max3421eRegRd(20<<3);
-
-
-	while(1){	
-		/* LED activity */
-		ledOn();
-		timeout1 = millis();
-		vTaskDelay(300);
-		ledOff();
-		vTaskDelay(300);
-		timeout2 = millis() + 1000;
-		while(millis() <= timeout2);
-		print("bellazia ");
 	}
 }
 
@@ -248,7 +193,8 @@ int main( void )
 	return 0;
 }
 
-	 
+
+ 
 static void prvSetupHardware( void )
 {
 	/* Start with the clocks in their expected state. */
