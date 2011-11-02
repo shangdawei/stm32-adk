@@ -30,10 +30,8 @@
 #include "FreeRTOS.h"
 #include "stm32f10x_lib.h"
 
+#include "stm32_types_compat.h"
 #include "Max3421e_constants.h"
-
-#define false (0)
-#define true  (~0)
 
 
 /* Public methods */

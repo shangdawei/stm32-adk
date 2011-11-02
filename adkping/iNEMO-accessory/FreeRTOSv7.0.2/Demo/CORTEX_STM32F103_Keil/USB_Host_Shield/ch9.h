@@ -31,7 +31,7 @@
 #ifndef _ch9_h_
 #define _ch9_h_
 
-#define byte u8
+#include "stm32_types_compat.h"
 
 /* Misc.USB constants */
 #define DEV_DESCR_LEN   18      //device descriptor length

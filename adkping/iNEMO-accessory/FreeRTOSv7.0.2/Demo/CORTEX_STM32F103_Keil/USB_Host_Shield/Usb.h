@@ -35,11 +35,7 @@
 
 #include <Max3421e.h>
 #include "ch9.h"
-
-#define byte u8
-#define boolean u8
-#define false (0)
-#define true  (~0)
+#include "stm32_types_compat.h"
 
 
 /* Common setup data constant combinations  */

@@ -18,9 +18,8 @@
 #define __AndroidAccessory_h__
 
 #include <Usb.h>
+#include "stm32_types_compat.h"
 
-#define bool u8
-#define byte u8
 
 struct AndroidAccessory{
     const char *manufacturer;

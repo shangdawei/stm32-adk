@@ -212,7 +212,7 @@ bool androidAccessoryFindEndpoints(byte addr, EP_RECORD *inEp, EP_RECORD *outEp)
     if (!(inEp->epAddr && outEp->epAddr))
         print("can't find accessory endpoints\r\n");
 
-    return inEp->epAddr && outEp->epAddr;
+	return true;
 }
 
 

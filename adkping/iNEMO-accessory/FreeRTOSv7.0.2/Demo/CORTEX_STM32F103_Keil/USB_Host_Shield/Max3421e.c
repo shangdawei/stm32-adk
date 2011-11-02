@@ -51,6 +51,7 @@
 #include "Max3421e_constants.h"
 
 #include "inemoutil.h"
+#include "stm32_types_compat.h"
 
 static u8 vbusState;
 
