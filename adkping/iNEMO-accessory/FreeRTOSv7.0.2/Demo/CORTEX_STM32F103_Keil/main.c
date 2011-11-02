@@ -1,33 +1,25 @@
-/** iNEMO ADK Accessory firmware
+/** iNEMO ADKPing Accessory firmware
+ * David Siorpaes (C) STMicroelectronics 2011
+ * 
+ * Sends a string to Android application and receives back
+ * data from Android application.
+ *
+ * Derived from Android DemoKit.pde Arduino application
  */
 
 			
 /* Scheduler includes. */
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h"	 
-#include "semphr.h"
-#include "serial.h"		  
-
-/* Library includes. */
-#include "stm32f10x_it.h"
-#include "stm32f10x_tim.h"
-#include "stm32f10x_gpio.h"
-#include "stm32f10x_exti.h"
-#include "stm32f10x_spi.h"
-
+#include "inemoutil.h"
 #include <AndroidAccessory.h>
 
-#include "Max3421e.h"
-#include "Max3421e_constants.h"
-
-#include "inemoutil.h"
-
-
+/* String that accessory sends to Android application */
 char sendBuffer[]="ArduinoAccessory!";
+
+/* Buffer that holds data sent back from Android application */
 char receiveBuffer[128];
-
-
+					 
 
 void mainPhase()
 {
@@ -54,7 +46,8 @@ void accessoryTask(void* params)
 	/* Initialize iNEMO utility library */
  	inemoUtilInit();
 
-	/* Construct accessory */
+	/* Construct accessory. Vendor, application and version MUST match 
+	 * with Android application manifest correspondent entries */
 	AndroidAccessory("STMicroelectronics", "adkping", "Just pings data", "2.0",
                         "http://www.st.com", "1234567890123456");
 
@@ -80,32 +73,15 @@ void accessoryTask(void* params)
 }
 
 
-int toggle = 0;
-
-void vTimer2IntHandler( void )
-{
-	/* ACK interrupt */
-    TIM_ClearITPendingBit( TIM2, TIM_IT_Update );
-
-	/* Read back the IRQ status to avoid double IRQ race */
-	/* See https://my.st.com/public/STe2ecommunities/mcu/Lists/ARM%20CortexM3%20STM32/Flat.aspx?RootFolder=%2Fpublic%2FSTe2ecommunities%2Fmcu%2FLists%2FARM%20CortexM3%20STM32%2FTimer%20update%20event%20interrupt%20retriggering%20after%20exit&FolderCTID=0x01200200770978C69A1141439FE559EB459D758000626BE2B829C32145B9EB5739142DC17E&currentviews=241 */
-	/* See https://my.st.com/public/FAQ/Lists/faqlist/DispForm.aspx?ID=144&level=1&objectid=141&type=product&Source=%2fpublic%2fFAQ%2ffaq.aspx%3flevel%3d1%26objectid%3d141%26type%3dproduct */
-	TIM_GetITStatus(TIM2, TIM_IT_Update);
-
-	if(toggle++ % 2)
-		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_SET);
-	else
-		GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_RESET);
-}
-
-
 int main( void )
 {  
  	int err;
 
+	/* Initialize board */
   	prvSetupHardware();
 	gpiosInit();
 
+	/* Spawn ADK task */
   	err = xTaskCreate(accessoryTask, (signed portCHAR*) "ADK", 512, NULL, tskIDLE_PRIORITY + 1, NULL );
   	if(err != pdPASS)
   		panic();
@@ -113,11 +89,9 @@ int main( void )
 	/* Start the scheduler. */
 	vTaskStartScheduler();
 	
-	/* Will only get here if there was not enough heap space to create the
-	idle task. */
+	/* Will only get here if there was not enough heap space to create the idle task. */
 	panic();
 
 	return 0;
 }
-
 
