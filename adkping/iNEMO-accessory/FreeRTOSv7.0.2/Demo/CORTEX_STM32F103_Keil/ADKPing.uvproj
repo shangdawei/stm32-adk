@@ -44,7 +44,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>RTOSDemo</OutputName>
+          <OutputName>ADKPing</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
@@ -447,64 +447,9 @@
           <GroupName>Demo Files</GroupName>
           <Files>
             <File>
-              <FileName>ParTest.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\ParTest\ParTest.c</FilePath>
-            </File>
-            <File>
               <FileName>serial.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\serial\serial.c</FilePath>
-            </File>
-            <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\main.c</FilePath>
-            </File>
-            <File>
-              <FileName>spi_flash.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\spi_flash.c</FilePath>
-            </File>
-            <File>
-              <FileName>semtest.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\semtest.c</FilePath>
-            </File>
-            <File>
-              <FileName>BlockQ.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\BlockQ.c</FilePath>
-            </File>
-            <File>
-              <FileName>blocktim.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\blocktim.c</FilePath>
-            </File>
-            <File>
-              <FileName>comtest.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\comtest.c</FilePath>
-            </File>
-            <File>
-              <FileName>death.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\death.c</FilePath>
-            </File>
-            <File>
-              <FileName>flash.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\flash.c</FilePath>
-            </File>
-            <File>
-              <FileName>integer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\integer.c</FilePath>
-            </File>
-            <File>
-              <FileName>PollQ.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Common\Minimal\PollQ.c</FilePath>
             </File>
             <File>
               <FileName>Max3421e.c</FileName>
@@ -520,6 +465,11 @@
               <FileName>AndroidAccessory.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\AndroidAccessory\AndroidAccessory.c</FilePath>
+            </File>
+            <File>
+              <FileName>adkping.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\adkping.c</FilePath>
             </File>
           </Files>
         </Group>
