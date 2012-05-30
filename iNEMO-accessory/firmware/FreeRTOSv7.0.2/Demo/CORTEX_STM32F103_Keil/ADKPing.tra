@@ -1,0 +1,47 @@
+*** Creating Trace Output File 'ADKPing.tra' Ok.
+### Preparing for ADS-LD.
+### Creating ADS-LD Command Line
+### List of Objects: adding '"stm32f10x.o"'
+### List of Objects: adding '".\cortexm3_macro_rvds.o"'
+### List of Objects: adding '"stm32f10x_adc.o"'
+### List of Objects: adding '"stm32f10x_dma.o"'
+### List of Objects: adding '"stm32f10x_gpio.o"'
+### List of Objects: adding '"stm32f10x_nvic.o"'
+### List of Objects: adding '"stm32f10x_rcc.o"'
+### List of Objects: adding '"stm32f10x_spi.o"'
+### List of Objects: adding '"stm32f10x_systick.o"'
+### List of Objects: adding '"stm32f10x_tim.o"'
+### List of Objects: adding '"stm32f10x_usart.o"'
+### List of Objects: adding '"stm32f10x_lib.o"'
+### List of Objects: adding '"stm32f10x_i2c.o"'
+### List of Objects: adding '"inemo_util.o"'
+### List of Objects: adding '"serial.o"'
+### List of Objects: adding '"max3421e.o"'
+### List of Objects: adding '"usb.o"'
+### List of Objects: adding '"androidaccessory.o"'
+### List of Objects: adding '"main.o"'
+### List of Objects: adding '"commanager.o"'
+### List of Objects: adding '"tasks.o"'
+### List of Objects: adding '"list.o"'
+### List of Objects: adding '"queue.o"'
+### List of Objects: adding '"port.o"'
+### List of Objects: adding '"heap_2.o"'
+### List of Objects: adding '"stlm75.o"'
+### List of Objects: adding '"lsm303dlh.o"'
+### List of Objects: adding '"inemo_lib.o"'
+### List of Objects: adding '"utils.o"'
+### ADS-LD Command completed:
+--cpu Cortex-M3 "stm32f10x.o" ".\cortexm3_macro_rvds.o" "stm32f10x_adc.o" "stm32f10x_dma.o" "stm32f10x_gpio.o" "stm32f10x_nvic.o" "stm32f10x_rcc.o" "stm32f10x_spi.o" "stm32f10x_systick.o" "stm32f10x_tim.o" "stm32f10x_usart.o" "stm32f10x_lib.o" "stm32f10x_i2c.o" "inemo_util.o" "serial.o" "max3421e.o" "usb.o" "androidaccessory.o" "main.o" "commanager.o" "tasks.o" "list.o" "queue.o" "port.o" "heap_2.o" "stlm75.o" "lsm303dlh.o" "inemo_lib.o" "utils.o" --library_type=microlib --strict --scatter "ADKPing.sct" 
+--summary_stderr --info summarysizes --map --xref --callgraph --symbols 
+--info sizes --info totals --info unused --info veneers 
+ --list ".\ADKPing.map" -o "ADKPing.axf"### Preparing Environment (PrepEnvAds)
+### ADS-LD Output File: 'ADKPing.axf'
+### ADS-LD Command File: 'ADKPing.lnp'
+### Checking for dirty Components...
+### Creating CmdFile 'ADKPing.lnp', Handle=0x000002B0
+### Writing '.lnp' file
+### ADS-LD Command file 'ADKPing.lnp' is ready.
+### ADS-LD: About to start ADS-LD Thread.
+### ADS-LD: executed with 0 errors
+### Updating obj list
+### LDADS_file() completed.
