@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    	<string-array name="acquisitionRate">
+	        <item name="1hz">1 Hz</item>
+	        <item name="10hz">10 Hz</item>
+	        <item name="25hz">25 Hz</item>
+	        <item name="50hz">50 Hz</item>
+	    </string-array>
+	     
+	    <string-array name="acquisitionRateValues">
+	        <item name="1hz">0</item>
+	        <item name="10hz">8</item>
+	        <item name="25hz">16</item>
+	        <item name="50hz">24</item>
+	    </string-array>
+
+	    <string-array name="accOutRate">
+	        <item name="50hz">50 Hz</item>
+	        <item name="100hz">100 Hz</item>
+	        <item name="400hz">400 Hz</item>
+	        <item name="1000hz">1000 Hz</item>
+	    </string-array>
+	     
+	    <string-array name="accOutRateValues">
+	        <item name="50hz">0</item>
+	        <item name="100hz">1</item>
+	        <item name="400hz">2</item>
+	        <item name="1000hz">3</item>
+	    </string-array>
+	    
+	    <string-array name="accFullScale">
+	        <item name="2g">2 g</item>
+	        <item name="4g">4 g</item>
+	        <item name="8g">8 g</item>
+	    </string-array>
+	     
+	    <string-array name="accFullScaleValues">
+	        <item name="2g">0</item>
+	        <item name="4g">1</item>
+	        <item name="8g">3</item>
+	    </string-array>
+	    
+	    <string-array name="magOutRate">
+	        <item name="0_75hz">0.75 Hz</item>
+	        <item name="1_5hz">1.5 Hz</item>
+	        <item name="3hz">3 Hz</item>
+	        <item name="7_5hz">7.5 Hz</item>
+	        <item name="15hz">15 Hz</item>
+	        <item name="30hz">30 Hz</item>
+	        <item name="75hz">75 Hz</item>
+	    </string-array>
+	     
+	    <string-array name="magOutRateValues">
+	        <item name="0_75hz">0</item>
+	        <item name="1_5hz">1</item>
+	        <item name="3hz">2</item>
+	        <item name="7_5hz">3</item>
+	        <item name="15hz">4</item>
+	        <item name="30hz">5</item>
+	        <item name="75hz">6</item>
+	    </string-array>
+	    
+	    <string-array name="magFullScale">
+	        <item name="1_3g">1.3 g</item>
+	        <item name="1_9g">1.9 g</item>
+	        <item name="2_5g">2.5 g</item>
+	        <item name="4_0g">4.0 g</item>
+	        <item name="4_7g">4.7 g</item>
+	        <item name="5_6g">5.6 g</item>
+	        <item name="8_1g">8.1 g</item>
+	    </string-array>
+	     
+	    <string-array name="magFullScaleValues">
+	        <item name="1_3g">0</item>
+	        <item name="1_9g">1</item>
+	        <item name="2_5g">3</item>
+	        <item name="4_0g">4</item>
+	        <item name="4_7g">5</item>
+	        <item name="5_6g">6</item>
+	        <item name="8_1g">7</item>
+	    </string-array>
+	    
+	    <string-array name="magOpMode">
+	        <item name="norm">Normal</item>
+	        <item name="pos_b">Positive Bias</item>
+	        <item name="neg_b">Negative Bias</item>
+	        <item name="forb">Forbidden</item>
+	    </string-array>
+	     
+	    <string-array name="magOpModeValues">
+	        <item name="norm">0</item>
+	        <item name="pos_b">1</item>
+	        <item name="neg_b">2</item>
+	        <item name="forb">3</item>
+	    </string-array>
+	    
+	    <string-array name="gyroFullScale">
+	        <item name="300dps">300 dps</item>
+	    </string-array>
+	     
+	    <string-array name="gyroFullScaleValues">
+	        <item name="300dps">4</item>
+	    </string-array>
+	    
+	    <string-array name="pressOutRate">
+	        <item name="7hz">7 Hz</item>
+	        <item name="12_5hz">12.5 Hz</item>
+	    </string-array>
+	     
+	    <string-array name="pressOutRateValues">
+	        <item name="7hz">1</item>
+	        <item name="12_5hz">3</item>
+	    </string-array>
+
+</resources>

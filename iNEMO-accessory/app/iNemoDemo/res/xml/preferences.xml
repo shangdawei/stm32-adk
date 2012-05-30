@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+	 
+	<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	 
+	    <PreferenceCategory
+	        android:title="Output Mode"
+	        android:key="out_mode">
+	         
+	        <CheckBoxPreference
+	            android:key="calibrated_data"
+	            android:summary="Receive calibrated or raw data"
+	            android:title="Enable calibrated data"
+	            android:defaultValue="@string/def_calibrated_data"
+	        />
+	         
+	        <ListPreference
+	            android:key="acquisition_rate"
+	            android:title="Acquisition Rate"
+	            android:summary="Define how often the board will sent sensor data"
+	            android:defaultValue="@string/def_acquisition_rate"
+	            android:entries="@array/acquisitionRate"
+	            android:entryValues="@array/acquisitionRateValues"
+	        />  
+	        
+	        <CheckBoxPreference
+	            android:key="ahrs_lib"
+	            android:title="Enable AHRS library"
+	            android:defaultValue="@string/def_ahrs_lib"
+	        />
+	             
+	    </PreferenceCategory>
+	 
+	    <PreferenceCategory
+	        android:title="Accelerometer"
+	        android:key="accelerometer">
+	 
+	        <CheckBoxPreference
+	            android:key="enable_acc"
+	            android:summary="Receive data from accelerometer sensor"
+	            android:title="Enable sensor"
+	            android:defaultValue="@string/def_acc"
+	        />
+	        
+	        <ListPreference
+	            android:key="acc_out_rate"
+	            android:title="Output Rate"
+	            android:defaultValue="@string/def_acc_out_rate"
+	            android:entries="@array/accOutRate"
+	            android:entryValues="@array/accOutRateValues"
+	            android:dependency="enable_acc"
+	        /> 
+	        
+	        <ListPreference
+	            android:key="acc_full_scale"
+	            android:title="Full Scale"
+	            android:defaultValue="@string/def_acc_full_scale"
+	            android:entries="@array/accFullScale"
+	            android:entryValues="@array/accFullScaleValues"
+	            android:dependency="enable_acc"
+	        /> 
+	        
+	        <EditTextPreference
+	            android:key="acc_offset_x"
+	            android:title="X Offset"
+	            android:summary="Define the offset for the x axis"
+	            android:dialogTitle="X Offset"
+	            android:dialogMessage="Define the offset for the x axis"
+	            android:inputType="number"  
+	            android:numeric="signed"
+	            android:maxLength="4" 
+	            android:defaultValue="@string/def_acc_off_x"
+	            android:dependency="enable_acc" />
+	        
+	        <EditTextPreference
+	            android:key="acc_offset_y"
+	            android:title="Y Offset"
+	            android:summary="Define the offset for the y axis"
+	            android:dialogTitle="Y Offset"
+	            android:dialogMessage="Define the offset for the y axis"
+	            android:inputType="number"
+	            android:numeric="signed"
+	            android:maxLength="4"   
+	            android:defaultValue="@string/def_acc_off_y"
+	            android:dependency="enable_acc" />
+	        
+	        <EditTextPreference
+	            android:key="acc_offset_z"
+	            android:title="Z Offset"
+	            android:summary="Define the offset for the z axis"
+	            android:dialogTitle="Z Offset"
+	            android:dialogMessage="Define the offset for the z axis"
+	            android:inputType="number"
+	            android:numeric="signed"
+	            android:maxLength="4"   
+	            android:defaultValue="@string/def_acc_off_z"
+	            android:dependency="enable_acc" />
+	 
+		</PreferenceCategory>	
+	    	    
+	    <PreferenceCategory
+	        android:title="Temperature"
+	        android:key="temperature">
+	 
+	        <CheckBoxPreference
+	            android:key="enable_temp"
+	            android:summary="Receive data from temperature sensor"
+	            android:title="Enable sensor"
+	            android:defaultValue="@string/def_temp"
+	        />
+	               
+	        <EditTextPreference
+	            android:key="temp_offset"
+	            android:title="Offset"
+	            android:summary="Define the offset for the temperature"
+	            android:dialogTitle="Offset"
+	            android:dialogMessage="Define the offset for the temperature"
+	            android:inputType="number|numberSigned"  
+	            android:maxLength="4"  
+	            android:defaultValue="@string/def_temp_off"
+	            android:dependency="enable_temp" />
+	 
+		</PreferenceCategory>
+		
+	    <PreferenceCategory
+	        android:title="Magnetometer"
+	        android:key="magnetometer">
+	 
+	        <CheckBoxPreference
+	            android:key="enable_mag"
+	            android:summary="Receive data from magnetometer sensor"
+	            android:title="Enable sensor"
+	            android:defaultValue="@string/def_mag"
+	        />
+	        
+	        <ListPreference
+	            android:key="mag_out_rate"
+	            android:title="Output Rate"
+	            android:defaultValue="@string/def_mag_out_rate"
+	            android:entries="@array/magOutRate"
+	            android:entryValues="@array/magOutRateValues"
+	            android:dependency="enable_mag"
+	        /> 
+	        
+	        <ListPreference
+	            android:key="mag_full_scale"
+	            android:title="Full Scale"
+	            android:defaultValue="@string/def_mag_full_scale"
+	            android:entries="@array/magFullScale"
+	            android:entryValues="@array/magFullScaleValues"
+	            android:dependency="enable_mag"
+	        /> 
+	        
+	        <ListPreference
+	            android:key="mag_op_mode"
+	            android:title="Operation Mode"
+	            android:defaultValue="@string/def_mag_op_mode"
+	            android:entries="@array/magOpMode"
+	            android:entryValues="@array/magOpModeValues"
+	            android:dependency="enable_mag"
+	        /> 
+	        
+	        <EditTextPreference
+	            android:key="mag_offset_x"
+	            android:title="X Offset"
+	            android:summary="Define the offset for the x axis"
+	            android:dialogTitle="X Offset"
+	            android:dialogMessage="Define the offset for the x axis"
+	            android:inputType="number"  
+	            android:numeric="signed"
+	            android:maxLength="4" 
+	            android:defaultValue="@string/def_mag_off_x"
+	            android:dependency="enable_mag" />
+	        
+	        <EditTextPreference
+	            android:key="mag_offset_y"
+	            android:title="Y Offset"
+	            android:summary="Define the offset for the y axis"
+	            android:dialogTitle="Y Offset"
+	            android:dialogMessage="Define the offset for the y axis"
+	            android:inputType="number"
+	            android:numeric="signed"
+	            android:maxLength="4"   
+	            android:defaultValue="@string/def_mag_off_y"
+	            android:dependency="enable_mag" />
+	        
+	        <EditTextPreference
+	            android:key="mag_offset_z"
+	            android:title="Z Offset"
+	            android:summary="Define the offset for the z axis"
+	            android:dialogTitle="Z Offset"
+	            android:dialogMessage="Define the offset for the z axis"
+	            android:inputType="number"
+	            android:numeric="signed"
+	            android:maxLength="4"   
+	            android:defaultValue="@string/def_mag_off_z"
+	            android:dependency="enable_mag" />
+	 
+		</PreferenceCategory>
+		
+	    <PreferenceCategory
+	        android:title="Gyroscope"
+	        android:key="gyroscope">
+	 
+	        <CheckBoxPreference
+	            android:key="enable_gyro"
+	            android:summary="Receive data from gyroscope sensor"
+	            android:title="Enable sensor"
+	            android:defaultValue="@string/def_gyro"
+	        />
+	        
+	        <ListPreference
+	            android:key="gyro_full_scale"
+	            android:title="Full Scale"
+	            android:defaultValue="@string/def_gyro_full_scale"
+	            android:entries="@array/gyroFullScale"
+	            android:entryValues="@array/gyroFullScaleValues"
+	            android:dependency="enable_gyro"
+	        /> 
+	        
+	        <EditTextPreference
+	            android:key="gyro_offset_x"
+	            android:title="X Offset"
+	            android:summary="Define the offset for the x axis"
+	            android:dialogTitle="X Offset"
+	            android:dialogMessage="Define the offset for the x axis"
+	            android:inputType="number"  
+	            android:numeric="signed"
+	            android:maxLength="4" 
+	            android:defaultValue="@string/def_gyro_off_x"
+	            android:dependency="enable_gyro" />
+	        
+	        <EditTextPreference
+	            android:key="gyro_offset_y"
+	            android:title="Y Offset"
+	            android:summary="Define the offset for the y axis"
+	            android:dialogTitle="Y Offset"
+	            android:dialogMessage="Define the offset for the y axis"
+	            android:inputType="number"
+	            android:numeric="signed"
+	            android:maxLength="4"   
+	            android:defaultValue="@string/def_gyro_off_y"
+	            android:dependency="enable_gyro" />
+	        
+	        <EditTextPreference
+	            android:key="gyro_offset_z"
+	            android:title="Z Offset"
+	            android:summary="Define the offset for the z axis"
+	            android:dialogTitle="Z Offset"
+	            android:dialogMessage="Define the offset for the z axis"
+	            android:inputType="number"
+	            android:numeric="signed"
+	            android:maxLength="4"   
+	            android:defaultValue="@string/def_gyro_off_z"
+	            android:dependency="enable_gyro" />
+	 
+		</PreferenceCategory>
+	
+	    <PreferenceCategory
+	        android:title="Pressure"
+	        android:key="pressure">
+	 
+	        <CheckBoxPreference
+	            android:key="enable_press"
+	            android:summary="Receive data from pressure sensor"
+	            android:title="Enable sensor"
+	            android:defaultValue="@string/def_press"
+	        />
+	        
+	        <ListPreference
+	            android:key="press_out_rate"
+	            android:title="Output Rate"
+	            android:defaultValue="@string/def_press_out_rate"
+	            android:entries="@array/pressOutRate"
+	            android:entryValues="@array/pressOutRateValues"
+	            android:dependency="enable_press"
+	        /> 
+	               
+	        <EditTextPreference
+	            android:key="press_offset"
+	            android:title="Offset"
+	            android:summary="Define the offset for the pressure"
+	            android:dialogTitle="Offset"
+	            android:dialogMessage="Define the offset for the pressure"
+	            android:inputType="number"  
+	            android:numeric="signed"
+	            android:maxLength="4"  
+	            android:defaultValue="@string/def_press_off"
+	            android:dependency="enable_press" />
+	 
+		</PreferenceCategory>
+    
+</PreferenceScreen>

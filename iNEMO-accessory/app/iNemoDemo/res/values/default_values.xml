@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="def_calibrated_data">true</string>
+    <string name="def_acquisition_rate">24</string>
+    <string name="def_ahrs_lib">false</string>
+    
+    <string name="def_acc">true</string>
+    <string name="def_acc_out_rate">0</string>
+    <string name="def_acc_full_scale">0</string>
+    <string name="def_acc_off_x">0</string>
+    <string name="def_acc_off_y">0</string>
+    <string name="def_acc_off_z">0</string>
+    
+    <string name="def_mag">false</string>
+    <string name="def_mag_out_rate">0</string>
+    <string name="def_mag_op_mode">0</string>
+    <string name="def_mag_full_scale">0</string>
+    <string name="def_mag_off_x">0</string>
+    <string name="def_mag_off_y">0</string>
+    <string name="def_mag_off_z">0</string>
+    
+    <string name="def_gyro">false</string>
+    <string name="def_gyro_full_scale">4</string>
+    <string name="def_gyro_off_x">0</string>
+    <string name="def_gyro_off_y">0</string>
+    <string name="def_gyro_off_z">0</string>
+    
+    <string name="def_press">false</string>
+    <string name="def_press_out_rate">1</string>
+    <string name="def_press_off">0</string>
+    
+    <string name="def_temp">true</string>
+    <string name="def_temp_off">0</string>
+</resources>

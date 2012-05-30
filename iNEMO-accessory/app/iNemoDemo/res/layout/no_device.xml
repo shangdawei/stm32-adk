@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent" android:layout_weight="1"
+	android:layout_height="fill_parent" android:orientation="vertical"
+	android:background="@drawable/background_holo_dark"
+	android:layout_gravity="fill_horizontal">
+
+    
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0px"
+		android:layout_weight="1" 
+		android:gravity="center_horizontal|center_vertical" 
+		android:layout_margin="10dp" >
+		
+		<TextView
+		    android:id="@+id/textView1"
+		    style="@style/iNemoTextBase"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:gravity="center_horizontal|center_vertical"
+		    android:text="@string/noDevice" >
+		</TextView>
+	
+	</LinearLayout>
+
+	<ImageView
+	    android:id="@+id/imageView1"
+	    android:layout_width="wrap_content"
+	    android:layout_height="0px"
+	    android:layout_weight="3"
+	    android:contentDescription="@string/app_name"
+	    android:src="@drawable/demokit_splash" />
+	
+	<ScrollView
+		android:id="@+id/ScrollView02"
+		android:layout_height="0px"
+		android:layout_weight="0.5"   
+		android:layout_width="match_parent"
+		android:layout_margin="10dp"> 
+			<TextView
+		        android:id="@+id/debugLabel"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:text="@string/empty_string" />
+    </ScrollView>
+
+	</LinearLayout>
