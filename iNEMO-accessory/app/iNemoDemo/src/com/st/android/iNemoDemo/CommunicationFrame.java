@@ -791,8 +791,6 @@ public class CommunicationFrame {
 			}
 			else if(parameter == MAG_FULL_SCALE){
 				if(value[0] == MAG_FULL_SCALE_1_3G)
-					s = "0.75Hz";
-				else if(value[0] == MAG_FULL_SCALE_1_3G)
 					s = "1.3g";
 				else if(value[0] == MAG_FULL_SCALE_1_9G)
 					s = "1.9g";
