@@ -1,0 +1,21 @@
+\section{Conclusions}
+\label{conclusions}
+
+The results obtained with this work can be summarized as follows:
+
+\begin{itemize}
+	\item Added the support of Android Open ADK to STM32 microcontrollers' family.
+	\item Defined a communication protocol for the exchange of messages between the iNEMO board and the Android device.
+	\item Implemented the communication protocol both in the firmware and in the Android application.
+	\item Implemented a set of task in the firmware that guarantees a correct communication with the Android device.
+	\item Implemented a complete Android application that can establish a communication with the iNEMO board and show to the user the data originated from the sensors integrated on the board (for now in a textual way). The user can also change the acquisition parameters and choose which sensors have to be monitored.
+\end{itemize}
+
+
+Future developments for this work:
+
+\begin{itemize}
+	\item Show the data originated from the sensors in a graphical way (sliding graphs as in the Windows application iNEMO Suite).
+	\item Implement a complete compilation chain based on gcc and Makefile, in order to get rid of the limitations imposed by Keil uVision IDE.
+	\item Improve the graphic of the application.
+\end{itemize}

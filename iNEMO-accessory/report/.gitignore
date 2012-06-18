@@ -1,0 +1,9 @@
+*~
+*.aux
+*.aux.bak
+*.bbl
+*.blg
+*.dvi
+*.log
+*.ps
+*.swp

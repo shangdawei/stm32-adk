@@ -1,0 +1,126 @@
+% VDE Template for EUSAR Papers
+% Provided by Barbara Lang und Siegmar Lampe
+% University of Bremen, January 2002
+% English version by Jens Fischer
+% German Aerospace Center (DLR), December 2005
+% Additional modifications by Matthias Wei{\ss}
+% FGAN, January 2009
+
+%-----------------------------------------------------------------------------
+% Type of publication
+\documentclass[a4paper,10pt]{article}
+%-----------------------------------------------------------------------------
+% Other packets: Most packets may be downloaded from www.dante.de and
+% "tcilatex.tex" can be found at (December 2005):
+% http://www.mackichan.com/techtalk/v30/UsingFloat.htm
+% Not all packets are necessarily needed:
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+%\usepackage{ngerman} % in german language if required
+\usepackage[nooneline,bf]{caption} % Figure descriptions from left margin
+\usepackage{times}
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[dvips]{graphicx}
+\usepackage{epsfig}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{pstricks}
+\usepackage{wrapfig}
+\usepackage{epstopdf}
+\usepackage{tabularx}
+\input{tcilatex}
+%-----------------------------------------------------------------------------
+% Page Setup
+\textheight24cm \textwidth17cm \columnsep6mm
+\oddsidemargin-5mm                 % depending on print drivers!
+\evensidemargin-5mm                % required margin size: 2cm
+\headheight0cm \headsep0cm \topmargin0cm \parindent0cm
+\pagestyle{empty}                  % delete footer and header
+%----------------------------------------------------------------------------
+%hyperref
+\usepackage[breaklinks]{hyperref}
+\hypersetup{
+	bookmarks=true,         % show bookmarks bar?
+	pdftoolbar=true,        % show Acrobat’s toolbar?
+	pdfmenubar=true,        % show Acrobat’s menu?
+	pdffitwindow=false,  
+	pdftitle={Android Open ADK on iNEMO platform},    % title
+	pdfauthor={Gianazza Andrea},     	 % author
+	pdfsubject={Demo application showing the support of Android ADK to STM32 microcontrollers family},
+	pdfkeywords={STM} {ADK} {Android} {Embedded Systems}
+}
+%----------------------------------------------------------------------------
+% Environment definitions
+\newenvironment*{mytitle}{\begin{LARGE}\bf}{\end{LARGE}\\}%
+\newenvironment*{mysubtitle}{\bf}{\\[1.5ex]}%
+\newenvironment*{myabstract}{\begin{Large}\bf}{\end{Large}\\[2.5ex]}%
+%-----------------------------------------------------------------------------
+% Using Pictures and tables:
+% - Instead "table" write "tablehere" without parameters
+% - Instead "figure" write "figurehere " without parameters
+% - Please insert a blank line before and after \begin{figuerhere} ... \end{figurehere}
+%
+% CAUTION:   The first reference to a figure/table in the text should be formatted fat.
+%
+\makeatletter
+\newenvironment{tablehere}{\def\@captype{table}}{}
+\newenvironment{figurehere}{\def\@captype{figure}\vspace{2ex}}{\vspace{2ex}}
+\def\hlinewd#1{%
+\noalign{\ifnum0=`}\fi\hrule \@height #1 %
+\futurelet\reserved@a\@xhline}
+\makeatother
+
+\renewcommand{\arraystretch}{1.2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+% Please use capital letters in the beginning of important words as for example
+\begin{mytitle}Android Open ADK on iNEMO platform\end{mytitle}
+\begin{mysubtitle}Demo application showing the support of Android Open ADK to STM32 microcontrollers' family\end{mysubtitle}
+%
+% Please do not insert a line here
+%
+\\
+Gianazza Andrea\\
+Matr. 755119, (g.gianazza87@gmail.com)\\
+\hspace{10ex}
+Scolari Alberto\\
+Matr. 123456, (al.scolari@alice.it)\\
+\hspace{10ex}
+Turri Matteo\\
+Matr. 123456, (matteoturri89@gmail.com)\\
+\begin{flushright}
+\emph{Report for the master course of Embedded Systems}\\
+\emph{Reviser: PhD. Patrick Bellasi (bellasi@elet.polimi.it)}
+\end{flushright}
+
+Received: \today \\
+\hspace{10ex}
+
+\begin{myabstract} Abstract \end{myabstract}
+In 2011 Google presented the Android Open Accessory Development Kit (ADK), a software framework that allows external USB hardware to easily communicate with Android-powered devices. Several distributors started to produce Android Open Accessory compatible development boards, in order to promote the diffusion of USB accessories for Android. The aim of this work is to show the support of Android Open ADK to STM32 microcontrollers family, porting the Windows iNEMO demo application to Android.
+
+\vspace{4ex}	% Please do not remove or reduce this space here.
+\begin{multicols}{2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{sections/sec1}
+\input{sections/sec2}
+\input{sections/sec3}
+\input{sections/sec4}
+\input{sections/sec5}
+\input{sections/sec6}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% We suggest the use of JabRef for editing your bibliography file (Report.bib)
+%\bibliographystyle{splncs}
+\nocite{*}
+\bibliographystyle{ieeetr}
+\bibliography{Report}
+
+\end{multicols}
+\end{document}
